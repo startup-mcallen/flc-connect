@@ -1021,6 +1021,16 @@ fromHash();render();
   try{
     var sb=supabase.createClient("https://aedbwkvhlbwmktqtiqca.supabase.co","sb_publishable_GKLTpxYjyma1vcB7QWk8lQ_xIr7jqz2");
     sb.rpc('public_stats').then(function(r){ if(r&&r.data){ window.__STATS=r.data; try{ window.dispatchEvent(new Event('hashchange')); }catch(e){} } }).catch(function(){});
+    // If the visitor is already signed in, show their profile bubble (linking back to the app) instead of Log in / Sign up.
+    sb.auth.getSession().then(function(r){
+      var session = r && r.data && r.data.session;
+      if(!session) return;
+      var u = session.user || {};
+      var nm = (u.user_metadata && u.user_metadata.full_name) || u.email || 'Account';
+      var ini = ((''+nm).trim()[0] || 'A').toUpperCase();
+      var rb = document.getElementById('roleBar');
+      if(rb){ rb.innerHTML = '<a href="app.html" title="Go to your account" style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#12305A;color:#fff;font-weight:800;text-decoration:none;font-size:14px">'+ini+'</a>'; }
+    }).catch(function(){});
   }catch(e){}
 })();
 </script>
