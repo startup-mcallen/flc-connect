@@ -161,7 +161,7 @@ function shell(inner, opts={}){
   }
   return `
   <header class="top"><div class="wrap topin">
-    <a class="brand" href="#"><img src="${SEAL}" alt=""> FLC Connect</a>
+    <a class="brand" href="index.html"><img src="${SEAL}" alt=""> FLC Connect</a>
     <div class="navsp"></div>
     <div class="navlinks">${nav}</div>
   </div></header>
@@ -653,20 +653,44 @@ function extractKeywords(text){
   return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,25).map(x=>x[0]);
 }
 function councilJobs(){
-  const srcPill=(s)=> s==='seed'?'<span class="pill pending">Example</span>':s==='adzuna'?'<span class="pill approved">Live</span>':`<span class="pill">${esc(s||'')}</span>`;
+  const srcPill=(s)=> s==='seed'?'<span class="pill pending">Example</span>':s==='adzuna'?'<span class="pill approved">Live</span>':s==='curated'?'<span class="pill approved">Added</span>':`<span class="pill">${esc(s||'')}</span>`;
   const list=(CO.jobs||[]).length
     ? `<div class="grid two" style="margin-top:14px">${CO.jobs.map(j=>`<div class="card" style="margin:0">
         <div class="row" style="justify-content:space-between"><strong>${esc(j.title)}</strong>${srcPill(j.source)}</div>
         <div class="small muted">${esc(j.company||'')}${(j.city||j.location)?' · '+esc(j.city||j.location):''}</div>
-        <div style="margin-top:8px"><a class="btn ghost sm" href="${esc(jobApplyUrl(j))}" target="_blank" rel="noopener">Open job →</a></div>
+        <div class="row" style="margin-top:8px">
+          <a class="btn ghost sm" href="${esc(jobApplyUrl(j))}" target="_blank" rel="noopener">Open job →</a>
+          ${j.source==='curated'?`<button class="btn ghost sm" data-act="deljob" data-id="${esc(j.id)}">Delete</button>`:''}
+        </div>
       </div>`).join('')}</div>`
-    : `<div class="card center" style="margin-top:14px"><p class="muted">No jobs yet. Load real RGV jobs from Adzuna.</p></div>`;
-  return `<div class="card">
+    : `<div class="card center" style="margin-top:14px"><p class="muted">No jobs yet. Load real RGV jobs from Adzuna, or add one below.</p></div>`;
+  return `
+    <div class="card">
       <div class="row" style="justify-content:space-between">
         <div><strong>Job feed</strong><div class="small muted">${(CO.jobs||[]).length} jobs students can match with.</div></div>
         <button class="btn gold sm" data-act="refreshjobs">Refresh</button>
       </div>
-    </div>${list}`;
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Add a job manually</h3>
+      <p class="muted small">For local / trusted jobs with a direct apply link (no third party). These show as "Added".</p>
+      <form data-form="cjob">
+        <label>Job title</label><input name="title" placeholder="e.g. Front desk assistant" required>
+        <div class="grid two">
+          <div><label>Company</label><input name="company" placeholder="e.g. McAllen Chamber"></div>
+          <div><label>City</label><input name="city" placeholder="e.g. McAllen"></div>
+        </div>
+        <div class="grid two">
+          <div><label>Job type</label><select name="job_type">${JOB_TYPES.map(j=>`<option value="${j[0]}">${j[1]}</option>`).join('')}</select></div>
+          <div><label>Field (optional)</label><input name="field" placeholder="e.g. Marketing"></div>
+        </div>
+        <label>Direct apply link</label><input name="url" type="url" placeholder="https://...">
+        <label>Description</label><textarea name="description" placeholder="What the student would do."></textarea>
+        <label>Skills wanted (comma separated)</label><input name="skills" placeholder="e.g. customer service, bilingual">
+        <div style="margin-top:14px"><button class="btn navy" type="submit">Add job</button></div>
+      </form>
+    </div>
+    ${list}`;
 }
 async function refreshJobs(){
   try{
@@ -675,6 +699,21 @@ async function refreshJobs(){
     setFlash('ok', (data&&data.count!=null)?`Loaded ${data.count} jobs from Adzuna.`:'Jobs refreshed.');
   }catch(e){ setFlash('err','Could not refresh jobs ('+(e.message||e)+'). The Adzuna connector may not be set up yet.'); }
   CO.loaded=false; await renderCouncil();
+}
+async function saveCouncilJob(form, fd){
+  const id='curated-'+((window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2));
+  const { error } = await sb.from('jobs').insert({
+    id, title:fd.title, company:fd.company||null, city:fd.city||null,
+    job_type:fd.job_type||null, field:fd.field||null, description:fd.description||null,
+    url:fd.url||null, skills:splitList(fd.skills), source:'curated'
+  });
+  if(error) throw error;
+  setFlash('ok','Job added.'); CO.loaded=false; await renderCouncil();
+}
+async function delCouncilJob(id){
+  const { error } = await sb.from('jobs').delete().eq('id',id);
+  if(error) throw error;
+  setFlash('ok','Job removed.'); CO.loaded=false; await renderCouncil();
 }
 
 async function checkResume(){
@@ -771,6 +810,7 @@ document.addEventListener('submit', async (ev)=>{
     else if(kind==='student') await saveStudent(f, fd);
     else if(kind==='employer') await saveEmployer(f, fd);
     else if(kind==='opening') await saveOpening(f, fd);
+    else if(kind==='cjob') await saveCouncilJob(f, fd);
   }catch(err){ setFlash('err', err.message||String(err)); render(); }
   finally{ if(btn)btn.disabled=false; }
 });
@@ -793,6 +833,7 @@ document.addEventListener('click', async (ev)=>{
     if(act==='viewresume') return viewOwnResume();
     if(act==='checkresume') return checkResume();
     if(act==='refreshjobs') return refreshJobs();
+    if(act==='deljob') return delCouncilJob(t.getAttribute('data-id'));
     if(act==='delopening') return delOpening(t.getAttribute('data-id'));
     if(act==='empstatus') return setEmpStatus(t.getAttribute('data-id'), t.getAttribute('data-s'));
     if(act==='studmod') return setStudMod(t.getAttribute('data-id'), t.getAttribute('data-s'));
