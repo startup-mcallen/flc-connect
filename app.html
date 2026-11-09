@@ -66,6 +66,13 @@ textarea{min-height:90px;resize:vertical}
 .mbar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .mbar i{display:block;height:100%;background:linear-gradient(90deg,var(--royal),var(--gold))}
 .ringnum{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;font-size:18px}
+.usermenu{position:relative}
+.avatarbtn{width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;border:0;font-weight:800;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
+.avatarbtn:hover{filter:brightness(1.12)}
+.usermenu-pop{position:absolute;right:0;top:50px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(18,48,90,.16);min-width:190px;z-index:50;overflow:hidden}
+.usermenu-pop .uhead{padding:11px 14px;border-bottom:1px solid var(--line)}
+.menuitem{display:block;width:100%;text-align:left;background:none;border:0;padding:11px 14px;font:inherit;cursor:pointer;color:var(--ink)}
+.menuitem:hover{background:var(--cream)}
 .msg{padding:11px 14px;border-radius:10px;margin:10px 0;font-size:14px;font-weight:600}
 .msg.err{background:#f6dede;color:var(--bad)}
 .msg.ok{background:#dcf0e4;color:var(--ok)}
@@ -156,8 +163,15 @@ function shell(inner, opts={}){
   const p = STATE.profile;
   let nav = '';
   if(STATE.session && p){
-    nav = `<span class="pill role">${esc(p.role)}</span>
-           <button class="btn ghost sm" data-act="signout">Sign out</button>`;
+    const nm = (p.full_name || STATE.session.user.email || '?');
+    const initials = ((nm.trim()[0]||'?')).toUpperCase();
+    nav = `<div class="usermenu">
+      <button class="avatarbtn" data-act="usermenu" aria-label="Account menu">${esc(initials)}</button>
+      <div class="usermenu-pop hide" id="usermenu-pop">
+        <div class="uhead"><strong class="small">${esc(p.full_name||'Signed in')}</strong><div class="muted small" style="text-transform:capitalize">${esc(p.role)}</div></div>
+        <button class="menuitem" data-act="signout">Sign out</button>
+      </div>
+    </div>`;
   }
   return `
   <header class="top"><div class="wrap topin">
@@ -820,6 +834,7 @@ document.addEventListener('click', async (ev)=>{
   const act = t.getAttribute('data-act');
   try{
     if(act==='reload') return location.reload();
+    if(act==='usermenu'){ const m=document.getElementById('usermenu-pop'); if(m) m.classList.toggle('hide'); return; }
     if(act==='signout') return signOut();
     if(act==='go'){ location.hash=t.getAttribute('data-h'); return render(); }
     if(act==='stab'){ STU.tab=t.getAttribute('data-t'); return renderStudent(); }
@@ -844,6 +859,8 @@ document.addEventListener('click', async (ev)=>{
 // chips + minor toggle + resume file (delegated)
 document.addEventListener('click',(ev)=>{
   const chip=ev.target.closest('.chip[data-v]'); if(chip && chip.parentElement.hasAttribute('data-chips')){ chip.classList.toggle('on'); }
+  const pop=document.getElementById('usermenu-pop');
+  if(pop && !pop.classList.contains('hide') && !ev.target.closest('.usermenu')){ pop.classList.add('hide'); }
 });
 document.addEventListener('change', async (ev)=>{
   if(ev.target.name==='is_minor'){ document.querySelectorAll('[data-minor]').forEach(x=>x.style.display=ev.target.checked?'':'none'); }

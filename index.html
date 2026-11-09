@@ -406,37 +406,27 @@ function tabs(role,list){
 
 /* ---------- Landing ---------- */
 const SIDES=[
-  ["student","user","Profile in three minutes","A short form: school, field, skills, city and the kind of job you want.","Students"],
-  ["student","file","A stronger resume","Upload a PDF, then get line-by-line suggestions. You approve every change.","Students"],
-  ["student","eye","You decide who sees you","Visible to approved employers, or hidden. Delete everything for good in one tap.","Students"],
-  ["student","spark","Openings that fit you","See local roles ranked by how well they match your field, skills and city.","Students"],
-  ["employer","shield","Council-approved access","Every employer is reviewed by HCFLC before they see a single profile.","Employers"],
-  ["employer","search","Search the Valley's talent","Filter by field, skills, graduation year, city and job type.","Employers"],
-  ["employer","spark","Post a role, get matches","Each opening shows the students who fit best, with the reasons why.","Employers"],
-  ["employer","hand","Introductions, not cold calls","Request an intro. Contact info is shared only when the student says yes.","Employers"],
-  ["admin","check","Approve employers","Approve, reject or remove employer accounts in one place.","Council"],
-  ["admin","lock","Keep profiles safe","Hide or remove any profile. Under-18 profiles wait for a guardian.","Council"],
-  ["admin","chart","See what's happening","Students, employers, intros and placements on one dashboard.","Council"],
-  ["admin","down","Reports in a click","Export students, employers and introductions to CSV.","Council"]
+  ["student","user","Build your profile in minutes","School, field, skills, city and the kind of job you want. One profile, done.","Students"],
+  ["student","file","A stronger resume","Upload your PDF and get a free resume check with tips to make it better.","Students"],
+  ["student","spark","Jobs that fit you","Real Valley openings ranked by how well they match your skills and resume.","Students"],
+  ["student","search","Fresh local listings","New roles across the RGV, pulled in and updated so you never miss one.","Students"],
+  ["student","hand","Apply in one click","Go straight to the real posting to apply. No middle step, no fees.","Students"],
+  ["student","shield","Private and safe","Your profile is reviewed by the council. Under-18 profiles need a guardian.","Students"]
 ];
 const STEPS=[
-  ["Student builds a profile","Takes a few minutes, with a consent checkbox before anything goes live."],
-  ["FLC Connect ranks the matches","Each opening lists the students who fit best by field, skills, job type and city."],
-  ["Employer requests an introduction","The student and the council are notified. Contact info stays private."],
-  ["Student says yes, council tracks it","Email and phone are shared, and the council records the placement."]
+  ["Build your profile","Add your school, skills and the kind of job you want. Takes a few minutes."],
+  ["Add your resume","Upload a PDF and run a free check. We pull keywords to sharpen your matches."],
+  ["Get matched to real jobs","See Valley openings ranked by how well they fit you, with the reasons why."],
+  ["Apply directly","Click through to the real posting and apply. You stay in control the whole way."]
 ];
 function stepPreview(i){
-  const s=S("s1")||db.students[0],o=O("o1")||db.openings[0];
+  const s=S("s1")||db.students[0],o=O("o1")||db.openings[0],o2=O("o6")||o,m=match(s,o),m2=match(s,o2);
   if(i===0)return `<div class="card"><div class="person"><div class="avatar">${initials(s)}</div><div><b>${esc(name(s))}</b><span class="muted small">${esc(s.school)} &middot; ${esc(s.field)}</span></div></div>
-    <div class="chips" style="margin:14px 0">${s.skills.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div>
-    <div class="switch" aria-hidden="true"><span class="trk" style="background:var(--good)"><span style="position:absolute;top:3px;left:25px;width:24px;height:24px;border-radius:50%;background:#fff"></span></span><span><b>Visible to approved employers</b><br><span class="hint">Consent given</span></span></div></div>`;
-  if(i===1){const r=db.students.filter(isLive).map(x=>({x,m:match(x,o)})).sort((a,b)=>b.m.score-a.m.score).slice(0,3);
-    return `<div class="card"><span class="label">Opening</span><h3 style="margin:8px 0 14px">${esc(o.title)}</h3>${r.map(({x,m})=>`<div style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><b class="small">${esc(name(x))}</b><b class="small">${m.score}%</b></div><div class="bar"><i style="width:${m.score}%"></i></div></div>`).join("")}</div>`}
-  if(i===2)return `<div class="card"><div class="person"><div class="avatar">${initials(s)}</div><div><b>${esc(name(s))}</b><span class="muted small">${esc(s.city)} &middot; Class of ${s.gradYear}</span></div></div>
-    <div class="lockbox" style="margin:14px 0"><b>Contact info is private</b><div class="small muted">Shared only if ${esc(s.first)} accepts.</div></div><span class="pill p-fair">Waiting on student</span></div>`;
-  const req=db.intros.length,acc=db.intros.filter(x=>x.status==="accepted").length,pl=db.intros.filter(x=>x.placed).length;
-  return `<div class="card"><b>Introduction accepted</b><p class="small muted" style="margin:4px 0 14px">${esc(s.first)} shared her contact info with Rio Grande Fresh Market.</p>
-    ${[["Requests",req],["Accepted",acc],["Placed",pl]].map(([l,n])=>`<div style="margin-bottom:10px"><div class="row" style="justify-content:space-between"><span class="small">${l}</span><b class="small">${n}</b></div><div class="bar"><i style="width:${req?n/req*100:0}%"></i></div></div>`).join("")}</div>`;
+    <div class="chips" style="margin:14px 0">${s.skills.map(k=>`<span class="chip">${esc(k)}</span>`).join("")}</div><span class="pill p-good">Profile ready</span></div>`;
+  if(i===1)return `<div class="card"><span class="label">Resume check</span><div class="row" style="justify-content:space-between;margin:10px 0"><b class="small">${esc(s.resume?s.resume.name:"resume.pdf")}</b><span class="pill p-good">6/7 good</span></div>
+    ${["Contact info","Education","Skills","Action verbs"].map(x=>`<div class="small" style="margin:6px 0">&#9989; ${x}</div>`).join("")}</div>`;
+  if(i===2)return `<div class="card"><span class="label">Your matches</span>${[[o,m],[o2,m2]].map(([op,mm])=>`<div style="margin:12px 0"><div class="row" style="justify-content:space-between"><b class="small">${esc(op.title)}</b><b class="small">${mm.score}%</b></div><div class="bar"><i style="width:${mm.score}%"></i></div><div class="muted small">${esc(E(op.employerId).company)} &middot; ${esc(op.city)}</div></div>`).join("")}</div>`;
+  return `<div class="card"><div style="font-weight:800">${esc(o.title)}</div><div class="muted small" style="margin:4px 0 14px">${esc(E(o.employerId).company)} &middot; ${esc(o.city)}</div><span class="btn btn-gold btn-sm">View &amp; apply &rarr;</span><p class="hint" style="margin-top:12px">Opens the real job posting. No fees, no middle step.</p></div>`;
 }
 function landing(){
   const live=db.students.filter(isLive).length,emp=db.employers.filter(e=>e.status==="approved").length,open=db.openings.length,pl=db.intros.filter(i=>i.placed).length;
@@ -447,23 +437,23 @@ function landing(){
     <div>
       <div class="eyebrow">${SEAL}<span class="accent">Hidalgo County<br>Future Leaders Council</span></div>
       <h1>Your first job starts <em>in the Valley.</em></h1>
-      <p class="lead">FLC Connect matches RGV students with local employers the council has approved. One profile, one resume, and contact info is shared only when you say yes.</p>
-      <div class="row"><button class="btn btn-gold" data-act="go" data-to="student">I'm a student &rarr;</button><button class="btn btn-outline-light" data-act="go" data-to="employer">I'm an employer</button></div>
+      <p class="lead">Build one profile, add your resume, and get matched to real jobs across the Rio Grande Valley — ranked by how well they fit you. Free for every RGV student.</p>
+      <div class="row"><button class="btn btn-gold" data-act="go" data-to="student">Get started &rarr;</button><a class="btn btn-outline-light" href="mailto:flc@co.hidalgo.tx.us?subject=FLC%20Connect%20%E2%80%94%20Employer%20inquiry">For employers</a></div>
       <div class="badges">
-        <div class="badge">${icon("shield")}Only council-approved employers</div>
-        <div class="badge">${icon("lock")}Contact shared when you accept</div>
+        <div class="badge">${icon("spark")}Matched to your resume</div>
+        <div class="badge">${icon("search")}Real local jobs, updated often</div>
         <div class="badge">${icon("check")}Free for students</div>
       </div>
     </div>
     <div class="stage" aria-hidden="true">
-      <div class="float f2"><span class="small muted">New match</span><div style="font-weight:800;font-size:1.6rem;letter-spacing:-.03em">${m2.score}%</div><div class="small">${esc(o2.title)}</div></div>
+      <div class="float f2"><span class="small muted">Top match</span><div style="font-weight:800;font-size:1.6rem;letter-spacing:-.03em">${m2.score}%</div><div class="small">${esc(o2.title)}</div></div>
       <div class="phone"><div class="screen">
         <div class="mini-h">Hi, ${esc(s.first)}</div><div style="font-size:.66rem;color:#5E6677">${esc(s.school)} &middot; Class of ${s.gradYear}</div>
         <div class="mcard"><div class="row" style="gap:8px;flex-wrap:nowrap"><div class="t" style="flex:1">${esc(o.title)}</div><b style="font-size:.85rem;color:#7E602A">${m.score}%</b></div><div class="s">${esc(E(o.employerId).company)} &middot; ${esc(o.city)}</div><div class="mbar"><i style="width:${m.score}%"></i></div><div class="mchips">${m.hits.slice(0,3).map(k=>`<span>${esc(k)}</span>`).join("")}</div></div>
         <div class="mcard"><div class="t">${esc(o2.title)}</div><div class="s">${esc(E(o2.employerId).company)} &middot; ${esc(o2.city)}</div><div class="mbar"><i style="width:${m2.score}%"></i></div></div>
         <div class="mcard" style="background:#12305A;color:#fff"><div class="t" style="color:#C69E55">Resume</div><div class="s" style="color:#C9D4EA">${esc(s.resume?s.resume.name:"Add your PDF")}</div></div>
       </div></div>
-      <div class="float f1"><b>Introduction request</b><div class="small muted">Valley Health Partners Clinic</div><div class="row" style="margin-top:8px;gap:6px"><span class="btn btn-primary btn-sm" style="min-height:30px;padding:4px 12px">Accept</span><span class="btn btn-ghost btn-sm" style="min-height:30px;padding:4px 12px">Decline</span></div></div>
+      <div class="float f1"><b>Ready to apply</b><div class="small muted">${esc(o.title)}</div><div class="row" style="margin-top:8px;gap:6px"><span class="btn btn-primary btn-sm" style="min-height:30px;padding:4px 12px">View &amp; apply</span></div></div>
     </div>
   </section>
 
@@ -475,13 +465,12 @@ function landing(){
   </section>
 
   <section class="section">
-    <div class="sec-head"><div><span class="label">Platform</span><h2 style="margin-top:12px">One place for students, employers and the council.</h2></div></div>
-    <div class="pills" role="tablist" aria-label="Filter features">${[["all","All"],["student","Students"],["employer","Employers"],["admin","Council"]].map(([k,l])=>`<button role="tab" aria-selected="${ui.side===k}" data-act="side" data-k="${k}">${l}</button>`).join("")}</div>
-    <div class="bento">${cards.map(c=>`<article class="fcard"><div class="top"><span class="icon">${icon(c[1])}</span><span class="chip">${c[4]}</span></div><h3>${c[2]}</h3><p>${c[3]}</p></article>`).join("")}</div>
+    <div class="sec-head"><div><span class="label">For students</span><h2 style="margin-top:12px">Everything you need to land that first job.</h2></div></div>
+    <div class="bento">${SIDES.map(c=>`<article class="fcard"><div class="top"><span class="icon">${icon(c[1])}</span></div><h3>${c[2]}</h3><p>${c[3]}</p></article>`).join("")}</div>
   </section>
 
   <section class="section">
-    <div class="sec-head"><div><span class="label">How a match happens</span><h2 style="margin-top:12px">From profile to placement in four steps.</h2></div><p class="muted">The student stays in control the whole way. Nothing personal is shared without a yes.</p></div>
+    <div class="sec-head"><div><span class="label">How it works</span><h2 style="margin-top:12px">From sign-up to your first job, in four steps.</h2></div><p class="muted">You stay in control the whole way, and it's always free for students.</p></div>
     <div class="flow">
       <div class="steps" role="tablist" aria-label="Steps">${STEPS.map((st,i)=>`<button class="stepbtn" role="tab" aria-selected="${ui.step===i}" data-act="step" data-i="${i}"><b><span class="num">${i+1}</span>${st[0]}</b><span class="d">${st[1]}</span></button>`).join("")}</div>
       <div class="preview" id="preview">${stepPreview(ui.step)}</div>
@@ -490,15 +479,15 @@ function landing(){
 
   <section class="section dark-panel">
     <div><span class="label">Why we built it</span><h2 style="margin:14px 0 14px">Valley talent should find Valley opportunities.</h2>
-      <p>Too many RGV students leave for their first job because they never heard about the ones here. HCFLC built FLC Connect so local employers can find them early, with the council making sure every connection is safe.</p>
-      <div class="row" style="margin-top:20px"><button class="btn btn-gold" data-act="go" data-to="admin">Open the council dashboard</button><button class="btn btn-outline-light" data-act="go" data-to="privacy">Read the privacy page</button></div></div>
+      <p>Too many RGV students leave for their first job because they never heard about the ones here. HCFLC built FLC Connect so students can find real local jobs early — matched to what they're good at.</p>
+      <div class="row" style="margin-top:20px"><button class="btn btn-gold" data-act="go" data-to="student">Get started</button><a class="btn btn-outline-light" href="mailto:flc@co.hidalgo.tx.us?subject=FLC%20Connect%20%E2%80%94%20Employer%20inquiry">For employers</a></div></div>
     <div class="mosaic" aria-hidden="true">${db.students.slice(0,8).map((x,i)=>i===4?`<div class="you">YOU</div><div class="${i%3?"alt":""}">${initials(x)}</div>`:`<div class="${i%3===1?"alt":""}">${initials(x)}</div>`).join("")}</div>
   </section>
 
   <section class="cta">
-    <h2>Ready to connect?</h2>
-    <p class="muted" style="margin:10px auto 22px;max-width:44ch">Students sign up free. Employers request an account and the council reviews it within two business days.</p>
-    <div class="row" style="justify-content:center"><button class="btn btn-primary" data-act="go" data-to="student">Create my profile</button><button class="btn btn-ghost" data-act="go" data-to="employer">Request an employer account</button></div>
+    <h2>Ready to find your first job?</h2>
+    <p class="muted" style="margin:10px auto 22px;max-width:44ch">Free for every RGV student. Build your profile, add your resume, and start matching today.</p>
+    <div class="row" style="justify-content:center"><button class="btn btn-primary" data-act="go" data-to="student">Create my account</button><a class="btn btn-ghost" href="mailto:flc@co.hidalgo.tx.us?subject=FLC%20Connect%20%E2%80%94%20Employer%20inquiry">For employers</a></div>
   </section>`;
 }
 
