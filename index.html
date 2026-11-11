@@ -168,6 +168,11 @@ td .row{flex-wrap:nowrap}
 .float.f2{left:max(0px,calc(50% - 290px));top:0;transform:rotate(-2deg);width:175px;z-index:2}
 .float.f1{z-index:2}
 @media (max-width:520px){.float.f1{right:0;bottom:0}.float.f2{left:0;top:0}.float{width:160px}}
+/* Living hero: grabbable floating cards */
+.hero .stage .float,.hero .stage .phone{will-change:transform;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+.hero .stage .float:hover,.hero .stage .phone:hover{box-shadow:0 40px 90px rgba(0,0,0,.42)}
+.hero .stage .dragging{cursor:grabbing;z-index:40;box-shadow:0 60px 120px rgba(0,0,0,.5)}
+@media (prefers-reduced-motion:reduce){.hero .stage .float,.hero .stage .phone{cursor:default}}
 
 /* Landing sections */
 .section{margin-top:clamp(48px,8vw,90px)}
@@ -399,6 +404,84 @@ function fromHash(){const h=(location.hash||"").slice(1);ui.role=["student","emp
 function render(){
   $("#roleBar").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.role===ui.role));
   $("#app").innerHTML=!ui.role?landing():ui.role==="student"?studentView():ui.role==="employer"?employerView():ui.role==="admin"?adminView():privacyView();
+  if(!ui.role){ try{ requestAnimationFrame(initHero); }catch(e){} }
+}
+/* ---- Living hero: orchestrated entrance, continuous float, grab-and-drag ---- */
+function initHero(){
+  var hero=document.querySelector('.hero'); if(!hero) return;
+  var stage=hero.querySelector('.stage'); if(!stage) return;
+  var cards=[].slice.call(stage.querySelectorAll('.float, .phone'));
+  if(!cards.length) return;
+  if(window.__heroRAF){ try{ cancelAnimationFrame(window.__heroRAF); }catch(e){} window.__heroRAF=0; }
+  var reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){}
+  // resting rotation each card already carries in CSS
+  var meta=cards.map(function(c,i){
+    var rot0=/\bf1\b/.test(c.className)?2:-2;
+    return {pull:[13,11,17][i]||13, bob:[12,9,14][i]||11, sp:[2700,2500,3200][i]||2900, ph:i*1.7, rot0:rot0, dx:0, dy:0, s:1, drag:false, hov:false};
+  });
+  function base(i){ return 'rotate('+meta[i].rot0+'deg)'; }
+
+  // Orchestrated entrance (once per page load; skipped for reduced motion)
+  if(!window.__heroShown && !reduce){
+    cards.forEach(function(c,i){
+      c.style.transition='none';
+      c.style.opacity='0';
+      c.style.transform=base(i)+' translateY(28px) scale(.95)';
+      // next frame: ease into resting pose, staggered
+      setTimeout(function(){
+        c.style.transition='opacity .75s cubic-bezier(.22,1,.36,1), transform .85s cubic-bezier(.22,1,.36,1)';
+        c.style.opacity='1';
+        c.style.transform=base(i);
+      }, 120 + i*150);
+    });
+  } else {
+    cards.forEach(function(c){ c.style.opacity='1'; });
+  }
+
+  // Pointer parallax source
+  var pointer={x:0,y:0}, cur={x:0,y:0};
+  if(matchMedia('(pointer:fine)').matches){
+    hero.addEventListener('pointermove', function(ev){ var r=hero.getBoundingClientRect(); pointer.x=(ev.clientX-r.left)/r.width-.5; pointer.y=(ev.clientY-r.top)/r.height-.5; });
+    hero.addEventListener('pointerleave', function(){ pointer.x=0; pointer.y=0; });
+  }
+  // Hover + grab-and-drag (drag released springs home)
+  cards.forEach(function(c,i){
+    var m=meta[i], gx=0, gy=0, bx0=0, by0=0;
+    c.addEventListener('pointerenter', function(){ m.hov=true; });
+    c.addEventListener('pointerleave', function(){ m.hov=false; });
+    c.addEventListener('pointerdown', function(ev){
+      m.drag=true; c.classList.add('dragging');
+      gx=ev.clientX; gy=ev.clientY; bx0=m.dx; by0=m.dy;
+      try{ c.setPointerCapture(ev.pointerId); }catch(e){}
+      ev.preventDefault();
+    });
+    c.addEventListener('pointermove', function(ev){ if(!m.drag) return; m.dx=bx0+(ev.clientX-gx); m.dy=by0+(ev.clientY-gy); });
+    function drop(ev){ if(!m.drag) return; m.drag=false; c.classList.remove('dragging'); try{ c.releasePointerCapture(ev.pointerId); }catch(e){} }
+    c.addEventListener('pointerup', drop);
+    c.addEventListener('pointercancel', drop);
+  });
+
+  if(reduce){ cards.forEach(function(c){ c.style.opacity='1'; }); return; }
+
+  function loop(now){
+    cur.x += (pointer.x-cur.x)*0.08; cur.y += (pointer.y-cur.y)*0.08;
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i], m=meta[i], held=m.drag?1:0;
+      var by=Math.sin(now/m.sp + m.ph)*m.bob*(held?0:1);
+      var bx=Math.cos(now/(m.sp*1.35) + m.ph)*(m.bob*0.55)*(held?0:1);
+      var rot=m.rot0 + Math.sin(now/(m.sp*1.6)+m.ph)*1.1*(held?0.25:1) + (held?0:cur.x*2.4);
+      if(!m.drag){ m.dx+=(0-m.dx)*0.06; m.dy+=(0-m.dy)*0.06; }
+      var st=m.drag?1.07:(m.hov?1.035:1);
+      m.s+=(st-m.s)*0.14;
+      var px=held?0:cur.x*m.pull, py=held?0:cur.y*m.pull;
+      c.style.transform='translate3d('+(bx+px+m.dx).toFixed(2)+'px,'+(by+py+m.dy).toFixed(2)+'px,0) rotate('+rot.toFixed(2)+'deg) scale('+m.s.toFixed(3)+')';
+    }
+    window.__heroRAF=requestAnimationFrame(loop);
+  }
+  // Start the float after the entrance settles, clearing entrance transitions so the loop owns transform
+  var startDelay = (!window.__heroShown ? (120 + cards.length*150 + 650) : 60);
+  window.__heroShown=true;
+  setTimeout(function(){ cards.forEach(function(c){ c.style.transition='none'; c.style.opacity='1'; }); window.__heroRAF=requestAnimationFrame(loop); }, startDelay);
 }
 function tabs(role,list){
   return `<div class="pills" role="tablist">${list.map(([k,l,c])=>`<button role="tab" aria-selected="${ui.tab[role]===k}" data-act="tab" data-role="${role}" data-tab="${k}">${l}${c?`<span class="count">${c}</span>`:""}</button>`).join("")}</div>`;
