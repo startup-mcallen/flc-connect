@@ -162,6 +162,18 @@ const JOB_TYPES = [
 ];
 const jobLabel = v => (JOB_TYPES.find(j=>j[0]===v)||[v,v])[1];
 
+// ---- Student intake questionnaire (council data) ----
+const INTAKE = {
+  seeking: [["internship","Internship"],["part_time","Part-time job"],["full_time","Full-time job"],["summer","Summer job"],["first_job","My first job ever"],["explore","Just exploring"]],
+  fields: [["healthcare","Healthcare"],["business","Business / office"],["education","Education"],["trades","Skilled trades"],["tech","Tech / IT"],["hospitality","Hospitality / food"],["government","Government"],["retail","Retail / sales"],["logistics","Logistics / warehouse"],["creative","Creative / media"]],
+  status: [["hs","In high school"],["college","In college"],["recent_grad","Recently graduated"],["gap","Out of school right now"]],
+  timeline: [["now","Right now"],["months","In the next few months"],["summer","This summer"],["after_grad","After I graduate"],["unsure","Not sure yet"]],
+  transportation: [["own_car","I have my own car"],["family","Family can drive me"],["public","Public transit / rideshare"],["walk_bike","Walk or bike"],["need_remote","I need remote or very close"]],
+  work_eligible: [["yes","Yes"],["need_help","I need help with paperwork"],["unsure","Not sure"]],
+  help_needed: [["resume","Resume help"],["interview","Interview practice"],["finding","Finding jobs"],["applying","Help applying"],["transport","Transportation"],["skills","Learning new skills"],["mentor","A mentor"],["college","College / scholarship info"]]
+};
+const intakeLabel = (group,v) => ((INTAKE[group]||[]).find(o=>o[0]===v)||[v,v])[1];
+
 // ====== STATE ======
 let STATE = { session:null, profile:null, loading:true };
 const app = document.getElementById('app');
@@ -350,13 +362,14 @@ function renderPickRole(){
 }
 
 // ====== STUDENT ======
-let STU = { data:null, contact:null, intros:[], jobs:[], tab:'home', loaded:false };
+let STU = { data:null, contact:null, intros:[], jobs:[], intake:null, intakeEdit:false, tab:'home', loaded:false };
 async function loadStudent(){
   const uid = STATE.session.user.id;
   const { data:s } = await sb.from('students').select('*').eq('id',uid).maybeSingle();
   STU.data = s;
   const { data:c } = await sb.from('student_contacts').select('*').eq('student_id',uid).maybeSingle();
   STU.contact = c;
+  try{ const { data:intake } = await sb.from('student_intake').select('*').eq('student_id',uid).maybeSingle(); STU.intake = intake; }catch(_){ STU.intake = null; }
   const { data:ir } = await sb.from('intro_requests')
     .select('*, employers(org_name, industry, website, description)')
     .eq('student_id',uid).order('created_at',{ascending:false});
@@ -576,12 +589,13 @@ function employerReqs(){
 }
 
 // ====== COUNCIL ======
-let CO = { employers:[], students:[], intros:[], jobs:[], tab:'dash', loaded:false };
+let CO = { employers:[], students:[], intros:[], jobs:[], intakes:[], tab:'dash', loaded:false };
 async function loadCouncil(){
   const { data:emps } = await sb.from('employers').select('*').order('created_at',{ascending:false});
   CO.employers = emps||[];
   const { data:studs } = await sb.from('students').select('*').order('created_at',{ascending:false});
   CO.students = studs||[];
+  try{ const { data:intakes } = await sb.from('student_intake').select('*'); CO.intakes = intakes||[]; }catch(_){ CO.intakes = []; }
   const { data:ir } = await sb.from('intro_requests').select('*');
   CO.intros = ir||[];
   const { data:jobs } = await sb.from('jobs').select('*').order('created_at',{ascending:false});
@@ -618,6 +632,33 @@ function councilDash(){
   <div class="row" style="margin-top:16px">
     <button class="btn ghost sm" data-act="export" data-k="students">Export students CSV</button>
     <button class="btn gold sm" data-act="refreshjobs">Refresh</button>
+  </div>
+  ${councilIntakeAnalytics()}`;
+}
+function councilIntakeAnalytics(){
+  const all=CO.intakes||[]; const n=all.length; const tot=CO.students.length;
+  if(!n) return `<div class="card" style="margin-top:16px"><strong>Student questionnaire</strong><p class="small muted" style="margin:6px 0 0">No responses yet. Students see a short questionnaire on their dashboard — answers show up here as aggregate insights.</p></div>`;
+  const multi=(group)=>{ const m={}; all.forEach(r=>(r[group]||[]).forEach(v=>{m[v]=(m[v]||0)+1;})); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+  const single=(field)=>{ const m={}; all.forEach(r=>{ if(r[field]){m[r[field]]=(m[r[field]]||0)+1;} }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+  const avg=(field)=>{ const v=all.map(r=>r[field]).filter(x=>x!=null); return v.length?(v.reduce((a,b)=>a+Number(b),0)/v.length).toFixed(1):'—'; };
+  const bar=(group,entries)=> entries.slice(0,6).map(([k,c])=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><span style="flex:0 0 44%;font-size:13px">${esc(intakeLabel(group,k))}</span><span style="flex:1;height:8px;background:var(--cream);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${Math.round(c/n*100)}%;background:linear-gradient(90deg,var(--navy),var(--gold))"></i></span><b style="font-size:13px;min-width:18px;text-align:right">${c}</b></div>`).join('');
+  const needRemote=all.filter(r=>r.transportation==='need_remote').length;
+  const needPaper=all.filter(r=>r.work_eligible==='need_help').length;
+  return `<div class="card" style="margin-top:16px">
+    <div class="row" style="justify-content:space-between;align-items:baseline"><strong>Student questionnaire</strong><span class="small muted">${n} of ${tot} completed</span></div>
+    <div class="grid two" style="margin-top:12px;gap:22px">
+      <div><div class="small muted" style="margin-bottom:4px">What they're looking for</div>${bar('seeking',multi('seeking'))}</div>
+      <div><div class="small muted" style="margin-bottom:4px">Where they need the most help</div>${bar('help_needed',multi('help_needed'))}</div>
+      <div><div class="small muted" style="margin-bottom:4px">Fields of interest</div>${bar('fields',multi('fields'))}</div>
+      <div><div class="small muted" style="margin-bottom:4px">Current status</div>${bar('status',single('status'))}</div>
+    </div>
+    <div class="grid three" style="margin-top:16px">
+      <div class="stat"><b>${avg('resume_confidence')}</b>Avg resume confidence (1–5)</div>
+      <div class="stat"><b>${avg('interview_confidence')}</b>Avg interview confidence (1–5)</div>
+      <div class="stat"><b>${needRemote}</b>Need remote / very close work</div>
+    </div>
+    ${needPaper?`<p class="small" style="margin-top:12px;color:var(--navy)">⚠️ <b>${needPaper}</b> student${needPaper>1?'s':''} asked for help with work paperwork.</p>`:''}
+    <div class="row" style="margin-top:12px"><button class="btn ghost sm" data-act="export" data-k="intake">Export questionnaire CSV</button></div>
   </div>`;
 }
 function councilEmployers(){
@@ -672,7 +713,20 @@ async function openStudent(id){
   const name=prof&&prof.full_name?prof.full_name:'Student';
   const kv=(k,v)=> v?`<div class="kv"><b>${esc(k)}</b><div>${v}</div></div>`:'';
   const chips=(arr)=> (arr&&arr.length)?arr.map(x=>`<span class="chip" style="cursor:default">${esc(x)}</span>`).join(' '):'';
+  const chipsL=(group,arr)=> (arr&&arr.length)?arr.map(v=>`<span class="chip" style="cursor:default">${esc(intakeLabel(group,v))}</span>`).join(' '):'';
   const jt=(s.job_types||[]).map(jobLabel).join(', ');
+  const intake=(CO.intakes||[]).find(x=>x.student_id===id);
+  const intakeHtml = intake ? `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><b class="small muted">Questionnaire</b>
+      ${kv('Looking for', chipsL('seeking',intake.seeking))}
+      ${kv('Fields', chipsL('fields',intake.fields))}
+      ${kv('Status', intake.status?esc(intakeLabel('status',intake.status)):'')}
+      ${kv('Timeline', intake.timeline?esc(intakeLabel('timeline',intake.timeline)):'')}
+      ${kv('Transportation', intake.transportation?esc(intakeLabel('transportation',intake.transportation)):'')}
+      ${kv('Can work in U.S.', intake.work_eligible?esc(intakeLabel('work_eligible',intake.work_eligible)):'')}
+      ${kv('Resume confidence', intake.resume_confidence?intake.resume_confidence+'/5':'')}
+      ${kv('Interview confidence', intake.interview_confidence?intake.interview_confidence+'/5':'')}
+      ${kv('Wants help with', chipsL('help_needed',intake.help_needed))}
+    </div>` : '';
   const body=`
     <div class="modal-head">
       <div class="row" style="gap:12px">
@@ -698,6 +752,7 @@ async function openStudent(id){
       ${kv('Email', contact&&contact.email?esc(contact.email):'<span class="muted">—</span>')}
       ${kv('Phone', contact&&contact.phone?esc(contact.phone):'<span class="muted">—</span>')}
       ${s.bio?`<div style="margin-top:12px"><b class="small muted">About</b><p class="small" style="margin:4px 0 0">${esc(s.bio)}</p></div>`:''}
+      ${intakeHtml}
       <div class="row" style="margin-top:16px;justify-content:space-between;gap:10px;flex-wrap:wrap">
         ${resumeUrl?`<a class="btn ghost sm" href="${esc(resumeUrl)}" target="_blank" rel="noopener">Open resume (PDF)</a>`:'<span class="small muted">No resume uploaded</span>'}
         <span class="row">
@@ -738,6 +793,7 @@ function studentDashboard(){
     <h2 style="margin:0 0 4px;color:#fff">Welcome back 👋</h2>
     <p style="opacity:.9;margin:0">${statusMsg}</p>
   </div>
+  ${intakeCard()}
   <div class="grid three" style="margin-top:14px">
     <div class="stat link" data-act="stab" data-t="profile"><b>${pct}%</b>Profile complete<span class="go">Edit profile →</span></div>
     <div class="stat link" data-act="stab" data-t="matches"><b>${(STU.jobs||[]).length}</b>Jobs to explore<span class="go">See matches →</span></div>
@@ -745,6 +801,49 @@ function studentDashboard(){
     <div class="stat"><b>${(s.skills||[]).length}</b>Skills added</div>
     <div class="stat"><b>${(s.resume_keywords||[]).length}</b>Resume keywords</div>
     <div class="stat"><b>${s.resume_path?'✓':'—'}</b>Resume uploaded</div>
+  </div>`;
+}
+
+function intakeCard(){
+  if(STU.intake && !STU.intakeEdit){
+    return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px">
+      <div><strong>✔ Questionnaire complete</strong><div class="small muted">Thanks! This helps the Future Leaders Council support you. You can update your answers anytime.</div></div>
+      <button class="btn ghost sm" data-act="editintake">Update answers</button>
+    </div>`;
+  }
+  return intakeForm();
+}
+function intakeForm(){
+  const it = STU.intake||{};
+  const has=(g,v)=> (it[g]||[]).includes(v);
+  const sel=(g,v)=> it[g]===v?'selected':'';
+  const chipGroup=(name)=> `<div class="chips" data-chips="${name}">${INTAKE[name].map(o=>`<span class="chip ${has(name,o[0])?'on':''}" data-v="${o[0]}">${o[1]}</span>`).join('')}</div>`;
+  const select=(name)=> `<select name="${name}"><option value="">Choose…</option>${INTAKE[name].map(o=>`<option value="${o[0]}" ${sel(name,o[0])}>${o[1]}</option>`).join('')}</select>`;
+  const scale=(name)=> `<div style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap">${[1,2,3,4,5].map(n=>`<label style="display:flex;align-items:center;gap:5px;font-weight:600;margin:0"><input type="radio" name="${name}" value="${n}" style="width:auto" ${String(it[name])===String(n)?'checked':''}>${n}</label>`).join('')}</div>`;
+  return `<div class="card" style="border:2px solid var(--gold);margin-top:14px">
+    <h2 style="margin:0 0 4px">A few quick questions 📝</h2>
+    <p class="muted small">About 2 minutes. Your answers help the Future Leaders Council support you — and sharpen your job matches. Only the council can see these.</p>
+    <form data-form="intake">
+      <label>What are you looking for? <span class="small muted">(pick any)</span></label>${chipGroup('seeking')}
+      <label>Fields you're interested in <span class="small muted">(pick any)</span></label>${chipGroup('fields')}
+      <div class="grid two">
+        <div><label>Where are you right now?</label>${select('status')}</div>
+        <div><label>When do you want to start?</label>${select('timeline')}</div>
+      </div>
+      <div class="grid two">
+        <div><label>How would you get to work?</label>${select('transportation')}</div>
+        <div><label>Can you legally work in the U.S.?</label>${select('work_eligible')}</div>
+      </div>
+      <div class="grid two">
+        <div><label>How confident is your resume? <span class="small muted">(1 low – 5 high)</span></label>${scale('resume_confidence')}</div>
+        <div><label>How confident about interviews? <span class="small muted">(1 – 5)</span></label>${scale('interview_confidence')}</div>
+      </div>
+      <label>What would help you most? <span class="small muted">(pick any)</span></label>${chipGroup('help_needed')}
+      <div class="row" style="margin-top:16px">
+        <button class="btn gold" type="submit">${STU.intake?'Save answers':'Submit'}</button>
+        ${STU.intake?`<button class="btn ghost" type="button" data-act="editintake">Cancel</button>`:''}
+      </div>
+    </form>
   </div>`;
 }
 
@@ -964,6 +1063,7 @@ document.addEventListener('submit', async (ev)=>{
     else if(kind==='signup') await doSignup(fd);
     else if(kind==='makeprofile') await doMakeProfile(fd);
     else if(kind==='student') await saveStudent(f, fd);
+    else if(kind==='intake') await saveIntake(f, fd);
     else if(kind==='employer') await saveEmployer(f, fd);
     else if(kind==='opening') await saveOpening(f, fd);
     else if(kind==='cjob') await saveCouncilJob(f, fd);
@@ -980,6 +1080,7 @@ document.addEventListener('click', async (ev)=>{
     if(act==='signout') return signOut();
     if(act==='go'){ location.hash=t.getAttribute('data-h'); return render(); }
     if(act==='stab'){ STU.tab=t.getAttribute('data-t'); return renderStudent(); }
+    if(act==='editintake'){ STU.intakeEdit=!STU.intakeEdit; return renderStudent(); }
     if(act==='etab'){ EMP.tab=t.getAttribute('data-t'); return renderEmployer(); }
     if(act==='ctab'){ CO.tab=t.getAttribute('data-t'); return renderCouncil(); }
     if(act==='editemp'){ EMP.tab='org'; EMP.data=EMP.data; return renderEmployer(); }
@@ -1043,7 +1144,7 @@ async function createProfileRows(role, full_name){
     await sb.from('student_contacts').insert({student_id:uid, email: STATE.session.user.email});
   }
 }
-function resetCaches(){ STU={data:null,contact:null,intros:[],tab:'profile',loaded:false}; EMP={data:null,students:[],myreqs:[],tab:'browse',loaded:false}; CO={employers:[],students:[],intros:[],tab:'dash',loaded:false}; }
+function resetCaches(){ STU={data:null,contact:null,intros:[],jobs:[],intake:null,intakeEdit:false,tab:'profile',loaded:false}; EMP={data:null,students:[],myreqs:[],tab:'browse',loaded:false}; CO={employers:[],students:[],intros:[],jobs:[],intakes:[],tab:'dash',loaded:false}; }
 
 // ====== STUDENT ACTIONS ======
 function collectChips(form,name){ return [...form.querySelectorAll(`[data-chips="${name}"] .chip.on`)].map(c=>c.getAttribute('data-v')); }
@@ -1063,6 +1164,26 @@ async function saveStudent(form, fd){
   if(error) throw error;
   await sb.from('student_contacts').upsert({student_id:uid, email:fd.c_email||null, phone:fd.c_phone||null});
   setFlash('ok','Profile saved.'); STU.loaded=false; await renderStudent();
+}
+async function saveIntake(form, fd){
+  const uid=STATE.session.user.id;
+  const payload={
+    student_id:uid,
+    seeking:collectChips(form,'seeking'),
+    fields:collectChips(form,'fields'),
+    help_needed:collectChips(form,'help_needed'),
+    status:fd.status||null,
+    timeline:fd.timeline||null,
+    transportation:fd.transportation||null,
+    work_eligible:fd.work_eligible||null,
+    resume_confidence:fd.resume_confidence?parseInt(fd.resume_confidence):null,
+    interview_confidence:fd.interview_confidence?parseInt(fd.interview_confidence):null,
+    updated_at:new Date().toISOString()
+  };
+  const { error } = await sb.from('student_intake').upsert(payload, {onConflict:'student_id'});
+  if(error) throw error;
+  STU.intake=payload; STU.intakeEdit=false; STU.tab='home';
+  setFlash('ok','Thanks! Your answers are saved.'); await renderStudent();
 }
 async function togglePublish(){
   const uid=STATE.session.user.id; const cur=STU.data;
@@ -1142,11 +1263,28 @@ async function setStudMod(id,status){
   setFlash('ok',`Student ${status}.`); CO.loaded=false; await renderCouncil();
 }
 function exportCsv(kind){
-  const rows = kind==='students'
-    ? [['Headline','School','Grad year','City','Minor','Moderation','Visible','Job types'],
-       ...CO.students.map(s=>[s.headline,s.school,s.grad_year,s.city,s.is_minor?'Yes':'No',s.moderation,s.published?'Yes':'No',(s.job_types||[]).map(jobLabel).join('; ')])]
-    : [['Organization','Industry','Website','Contact','Status','Roles'],
+  let rows;
+  if(kind==='students'){
+    rows=[['Headline','School','Grad year','City','Minor','Moderation','Visible','Job types'],
+       ...CO.students.map(s=>[s.headline,s.school,s.grad_year,s.city,s.is_minor?'Yes':'No',s.moderation,s.published?'Yes':'No',(s.job_types||[]).map(jobLabel).join('; ')])];
+  } else if(kind==='intake'){
+    const byId={}; CO.students.forEach(s=>byId[s.id]=s);
+    rows=[['Student','School','Looking for','Fields','Status','Timeline','Transportation','Can work in U.S.','Resume confidence (1-5)','Interview confidence (1-5)','Wants help with'],
+       ...CO.intakes.map(r=>{ const s=byId[r.student_id]||{}; return [
+         s.headline||'Student', s.school||'',
+         (r.seeking||[]).map(v=>intakeLabel('seeking',v)).join('; '),
+         (r.fields||[]).map(v=>intakeLabel('fields',v)).join('; '),
+         r.status?intakeLabel('status',r.status):'',
+         r.timeline?intakeLabel('timeline',r.timeline):'',
+         r.transportation?intakeLabel('transportation',r.transportation):'',
+         r.work_eligible?intakeLabel('work_eligible',r.work_eligible):'',
+         r.resume_confidence||'', r.interview_confidence||'',
+         (r.help_needed||[]).map(v=>intakeLabel('help_needed',v)).join('; ')
+       ]; })];
+  } else {
+    rows=[['Organization','Industry','Website','Contact','Status','Roles'],
        ...CO.employers.map(e=>[e.org_name,e.industry,e.website,e.contact_name,e.status,(e.job_types||[]).map(jobLabel).join('; ')])];
+  }
   const csv = rows.map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download=`flc-${kind}.csv`; a.click(); URL.revokeObjectURL(url);
