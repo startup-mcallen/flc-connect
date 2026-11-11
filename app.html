@@ -786,7 +786,7 @@ function extractKeywords(text){
   return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,25).map(x=>x[0]);
 }
 function councilJobs(){
-  const srcPill=(s)=> s==='seed'?'<span class="pill pending">Example</span>':s==='adzuna'?'<span class="pill approved">Live</span>':s==='usajobs'?'<span class="pill role">Federal</span>':s==='curated'?'<span class="pill approved">Added</span>':`<span class="pill">${esc(s||'')}</span>`;
+  const srcPill=(s)=> s==='seed'?'<span class="pill pending">Example</span>':s==='adzuna'?'<span class="pill approved">Live</span>':s==='usajobs'?'<span class="pill role">Federal</span>':s==='muse'?'<span class="pill approved">The Muse</span>':s==='curated'?'<span class="pill approved">Added</span>':`<span class="pill">${esc(s||'')}</span>`;
   const list=(CO.jobs||[]).length
     ? `<div class="grid two" style="margin-top:14px">${CO.jobs.map(j=>`<div class="card" style="margin:0">
         <div class="row" style="justify-content:space-between"><strong>${esc(j.title)}</strong>${srcPill(j.source)}</div>
