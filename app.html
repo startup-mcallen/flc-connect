@@ -109,6 +109,18 @@ input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(198,158,85,.18
 .tip .tic{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:13px}
 .tip.good .tic{background:#dcf0e4;color:var(--ok)}
 .tip.todo .tic{background:#fdf2d8}
+/* Modal / detail sheet */
+.mbackdrop{position:fixed;inset:0;background:rgba(10,20,40,.46);display:flex;align-items:flex-end;justify-content:center;z-index:300;animation:fadeUp .2s both}
+@media(min-width:640px){.mbackdrop{align-items:center;padding:20px}}
+.modal{background:#fff;border-radius:18px 18px 0 0;max-width:560px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 -12px 44px rgba(0,0,0,.22);animation:sheetUp .32s cubic-bezier(.22,1,.36,1) both}
+@media(min-width:640px){.modal{border-radius:18px}}
+@keyframes sheetUp{from{transform:translateY(34px);opacity:.5}to{transform:none;opacity:1}}
+.modal-head{position:sticky;top:0;background:#fff;padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:2}
+.modal-body{padding:16px 20px 22px}
+.xbtn{background:none;border:0;font-size:24px;cursor:pointer;color:var(--muted);line-height:1;padding:0 4px}
+.kv{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.kv:first-of-type{border-top:0}
+.kv b{min-width:112px;color:var(--muted);font-weight:600;flex:0 0 auto}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
 .usermenu{position:relative}
 .avatarbtn{width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;border:0;font-weight:800;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
@@ -629,17 +641,72 @@ function councilStudents(){
   if(!CO.students.length) return `<div class="card center muted">No students yet.</div>`;
   return `<div class="card">${CO.students.map(s=>`
     <div class="sline">
-      <div class="row" style="gap:12px">
+      <div class="row" style="gap:12px;cursor:pointer;flex:1" data-act="viewstudent" data-id="${s.id}">
         <div class="avatar">${esc((s.headline||'?')[0]||'S')}</div>
         <div><strong>${esc(s.headline||'Student')}</strong>
         <div class="small muted">${esc(s.school||'')}${s.grad_year?' · '+esc(s.grad_year):''}${s.is_minor?' · <b>Minor</b>':''}</div></div>
       </div>
       <div class="row">
         <span class="pill ${s.moderation}">${s.moderation}</span>
+        <button class="btn ghost sm" data-act="viewstudent" data-id="${s.id}">View</button>
         ${s.moderation!=='approved'?`<button class="btn ok sm" data-act="studmod" data-id="${s.id}" data-s="approved">Approve</button>`:''}
         ${s.moderation!=='rejected'?`<button class="btn ghost sm" data-act="studmod" data-id="${s.id}" data-s="rejected">Reject</button>`:''}
       </div>
     </div>`).join('')}</div>`;
+}
+function showModal(html){
+  let b=document.getElementById('mroot');
+  if(!b){ b=document.createElement('div'); b.id='mroot'; document.body.appendChild(b); }
+  b.innerHTML=`<div class="mbackdrop"><div class="modal">${html}</div></div>`;
+}
+function closeModal(){ const b=document.getElementById('mroot'); if(b) b.innerHTML=''; }
+async function openStudent(id){
+  const s=CO.students.find(x=>x.id===id); if(!s) return;
+  showModal('<div class="modal-body center" style="padding:40px">Loading…</div>');
+  let prof=null,contact=null,resumeUrl=null;
+  try{
+    const r1=await sb.from('profiles').select('full_name').eq('id',id).maybeSingle(); prof=r1.data;
+    const r2=await sb.from('student_contacts').select('*').eq('student_id',id).maybeSingle(); contact=r2.data;
+    if(s.resume_path){ const r3=await sb.storage.from('resumes').createSignedUrl(s.resume_path,300); resumeUrl=r3.data&&r3.data.signedUrl; }
+  }catch(e){}
+  const name=prof&&prof.full_name?prof.full_name:'Student';
+  const kv=(k,v)=> v?`<div class="kv"><b>${esc(k)}</b><div>${v}</div></div>`:'';
+  const chips=(arr)=> (arr&&arr.length)?arr.map(x=>`<span class="chip" style="cursor:default">${esc(x)}</span>`).join(' '):'';
+  const jt=(s.job_types||[]).map(jobLabel).join(', ');
+  const body=`
+    <div class="modal-head">
+      <div class="row" style="gap:12px">
+        <div class="avatar">${esc((name[0]||'S'))}</div>
+        <div><strong style="font-size:17px">${esc(name)}</strong>
+        <div class="small muted">${esc(s.headline||'')}</div></div>
+      </div>
+      <button class="xbtn" data-act="closemodal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="row" style="margin-bottom:10px">
+        <span class="pill ${s.moderation}">${s.moderation}</span>
+        ${s.published?'<span class="pill approved">Active</span>':'<span class="pill pending">Paused</span>'}
+        ${s.is_minor?'<span class="pill rejected">Under 18</span>':''}
+      </div>
+      ${kv('School', esc(s.school))}
+      ${kv('Graduation', esc(s.grad_year))}
+      ${kv('City', esc(s.city))}
+      ${kv('Job types', esc(jt))}
+      ${kv('Skills', chips(s.skills))}
+      ${kv('Interests', chips(s.interests))}
+      ${s.is_minor?kv('Guardian', esc(s.guardian_name)+(s.guardian_email?' · '+esc(s.guardian_email):'')+(s.guardian_approved?' <span class="pill approved">approved</span>':' <span class="pill pending">pending</span>')):''}
+      ${kv('Email', contact&&contact.email?esc(contact.email):'<span class="muted">—</span>')}
+      ${kv('Phone', contact&&contact.phone?esc(contact.phone):'<span class="muted">—</span>')}
+      ${s.bio?`<div style="margin-top:12px"><b class="small muted">About</b><p class="small" style="margin:4px 0 0">${esc(s.bio)}</p></div>`:''}
+      <div class="row" style="margin-top:16px;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        ${resumeUrl?`<a class="btn ghost sm" href="${esc(resumeUrl)}" target="_blank" rel="noopener">Open resume (PDF)</a>`:'<span class="small muted">No resume uploaded</span>'}
+        <span class="row">
+          ${s.moderation!=='approved'?`<button class="btn ok sm" data-act="studmod" data-id="${s.id}" data-s="approved">Approve</button>`:''}
+          ${s.moderation!=='rejected'?`<button class="btn bad sm" data-act="studmod" data-id="${s.id}" data-s="rejected">Reject</button>`:''}
+        </span>
+      </div>
+    </div>`;
+  showModal(body);
 }
 
 // ====== MATCHING + RESUME CHECK + OPENINGS ======
@@ -915,6 +982,8 @@ document.addEventListener('click', async (ev)=>{
     if(act==='viewresume') return viewOwnResume();
     if(act==='checkresume') return checkResume();
     if(act==='refreshjobs') return refreshJobs();
+    if(act==='viewstudent') return openStudent(t.getAttribute('data-id'));
+    if(act==='closemodal') return closeModal();
     if(act==='deljob') return delCouncilJob(t.getAttribute('data-id'));
     if(act==='delopening') return delOpening(t.getAttribute('data-id'));
     if(act==='empstatus') return setEmpStatus(t.getAttribute('data-id'), t.getAttribute('data-s'));
@@ -928,7 +997,9 @@ document.addEventListener('click',(ev)=>{
   const chip=ev.target.closest('.chip[data-v]'); if(chip && chip.parentElement.hasAttribute('data-chips')){ chip.classList.toggle('on'); }
   const pop=document.getElementById('usermenu-pop');
   if(pop && !pop.classList.contains('hide') && !ev.target.closest('.usermenu')){ pop.classList.add('hide'); }
+  if(ev.target.classList && ev.target.classList.contains('mbackdrop')) closeModal();
 });
+document.addEventListener('keydown',(ev)=>{ if(ev.key==='Escape') closeModal(); });
 document.addEventListener('change', async (ev)=>{
   if(ev.target.name==='is_minor'){ document.querySelectorAll('[data-minor]').forEach(x=>x.style.display=ev.target.checked?'':'none'); }
   if(ev.target.hasAttribute('data-resume')){ await uploadResume(ev.target.files[0]); }
@@ -1058,6 +1129,7 @@ async function setEmpStatus(id,status){
 async function setStudMod(id,status){
   const { error } = await sb.from('students').update({moderation:status}).eq('id',id);
   if(error) throw error;
+  closeModal();
   setFlash('ok',`Student ${status}.`); CO.loaded=false; await renderCouncil();
 }
 function exportCsv(kind){

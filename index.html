@@ -407,7 +407,7 @@ function tabs(role,list){
 /* ---------- Landing ---------- */
 const SIDES=[
   ["student","user","Build your profile in minutes","School, field, skills, city and the kind of job you want. One profile, done.","Students"],
-  ["student","file","A stronger resume","Upload your PDF and get a free resume check with tips to make it better.","Students"],
+  ["student","file","Free Resume Booster","Upload your PDF and get an instant strength score plus quick-win tips to make it stronger before employers ever see it.","Students"],
   ["student","spark","Jobs that fit you","Real Valley openings ranked by how well they match your skills and resume.","Students"],
   ["student","search","Fresh local listings","New roles across the RGV, pulled in and updated so you never miss one.","Students"],
   ["student","hand","Apply in one click","Go straight to the real posting to apply. No middle step, no fees.","Students"],
@@ -415,7 +415,7 @@ const SIDES=[
 ];
 const STEPS=[
   ["Build your profile","Add your school, skills and the kind of job you want. Takes a few minutes."],
-  ["Add your resume","Upload a PDF and run a free check. We pull keywords to sharpen your matches."],
+  ["Add your resume & boost it","Upload a PDF to get an instant resume strength score with quick tips. We also pull keywords to sharpen your matches."],
   ["Get matched to real jobs","See Valley openings ranked by how well they fit you, with the reasons why."],
   ["Apply directly","Click through to the real posting and apply. You stay in control the whole way."]
 ];
@@ -1020,7 +1020,7 @@ fromHash();render();
 (function(){
   try{
     var sb=supabase.createClient("https://aedbwkvhlbwmktqtiqca.supabase.co","sb_publishable_GKLTpxYjyma1vcB7QWk8lQ_xIr7jqz2");
-    sb.rpc('public_stats').then(function(r){ if(r&&r.data){ window.__STATS=r.data; try{ window.dispatchEvent(new Event('hashchange')); }catch(e){} } }).catch(function(){});
+    sb.rpc('public_stats').then(function(r){ if(r&&r.data){ window.__STATS=r.data; try{ window.dispatchEvent(new Event('hashchange')); }catch(e){} setTimeout(animateCounters,90); } }).catch(function(){});
     // If the visitor is already signed in, show their profile bubble (linking back to the app) instead of Log in / Sign up.
     sb.auth.getSession().then(function(r){
       var session = r && r.data && r.data.session;
@@ -1031,6 +1031,22 @@ fromHash();render();
       var rb = document.getElementById('roleBar');
       if(rb){ rb.innerHTML = '<a href="app.html" title="Go to your account" style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:#12305A;color:#fff;font-weight:800;text-decoration:none;font-size:14px">'+ini+'</a>'; }
     }).catch(function(){});
+    function animateCounters(){
+      try{ if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; }catch(e){}
+      var stats=document.querySelector('.stats'); if(!stats) return;
+      var run=function(){
+        if(window.__counted) return; window.__counted=true;
+        stats.querySelectorAll('.n').forEach(function(el){
+          var target=parseInt((el.textContent||'0').replace(/[^0-9]/g,''))||0; if(target<=0) return;
+          var dur=1200, t0=null; el.textContent='0';
+          function tick(now){ if(!t0)t0=now; var p=Math.min(1,(now-t0)/dur); var e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e).toLocaleString(); if(p<1)requestAnimationFrame(tick); else el.textContent=target.toLocaleString(); }
+          requestAnimationFrame(tick);
+        });
+      };
+      if('IntersectionObserver' in window){ var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ run(); io.disconnect(); } }); },{threshold:0.4}); io.observe(stats); }
+      else run();
+    }
+    setTimeout(function(){ if(!window.__counted) animateCounters(); }, 1600);
   }catch(e){}
 })();
 </script>
