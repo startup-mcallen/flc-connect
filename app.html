@@ -799,14 +799,21 @@ function councilJobs(){
     : `<div class="card center" style="margin-top:14px"><p class="muted">No jobs yet. Load real RGV jobs from Adzuna, or add one below.</p></div>`;
   return `
     <div class="card">
-      <div class="row" style="justify-content:space-between">
+      <div class="row" style="justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div><strong>Job feed</strong><div class="small muted">${(CO.jobs||[]).length} jobs students can match with.</div></div>
-        <button class="btn gold sm" data-act="refreshjobs">Refresh</button>
+        <div class="row">
+          <button class="btn ghost sm" data-act="addjob">+ Add manually</button>
+          <button class="btn gold sm" data-act="refreshjobs">Refresh</button>
+        </div>
       </div>
     </div>
-    <div class="card">
-      <h3 style="margin-top:0">Add a job manually</h3>
-      <p class="muted small">For local / trusted jobs with a direct apply link (no third party). These show as "Added".</p>
+    ${list}`;
+}
+function addJobForm(){
+  return `
+    <div class="modal-head"><strong style="font-size:17px">Add a job manually</strong><button class="xbtn" data-act="closemodal" aria-label="Close">×</button></div>
+    <div class="modal-body">
+      <p class="muted small" style="margin-top:0">For local / trusted jobs with a direct apply link (no third party). Shows as "Added".</p>
       <form data-form="cjob">
         <label>Job title</label><input name="title" placeholder="e.g. Front desk assistant" required>
         <div class="grid two">
@@ -822,9 +829,9 @@ function councilJobs(){
         <label>Skills wanted (comma separated)</label><input name="skills" placeholder="e.g. customer service, bilingual">
         <div style="margin-top:14px"><button class="btn navy" type="submit">Add job</button></div>
       </form>
-    </div>
-    ${list}`;
+    </div>`;
 }
+function openAddJob(){ showModal(addJobForm()); }
 async function refreshJobs(){
   try{
     const { data, error } = await sb.functions.invoke('refresh-jobs');
@@ -841,6 +848,7 @@ async function saveCouncilJob(form, fd){
     url:fd.url||null, skills:splitList(fd.skills), source:'curated'
   });
   if(error) throw error;
+  closeModal();
   setFlash('ok','Job added.'); CO.loaded=false; await renderCouncil();
 }
 async function delCouncilJob(id){
@@ -983,6 +991,7 @@ document.addEventListener('click', async (ev)=>{
     if(act==='checkresume') return checkResume();
     if(act==='refreshjobs') return refreshJobs();
     if(act==='viewstudent') return openStudent(t.getAttribute('data-id'));
+    if(act==='addjob') return openAddJob();
     if(act==='closemodal') return closeModal();
     if(act==='deljob') return delCouncilJob(t.getAttribute('data-id'));
     if(act==='delopening') return delOpening(t.getAttribute('data-id'));
