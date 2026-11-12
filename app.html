@@ -84,6 +84,30 @@ textarea{min-height:90px;resize:vertical}
 .track i{display:block;height:100%;border-radius:5px;transition:width 1s cubic-bezier(.22,1,.36,1)}
 .barw .track{flex:1}
 .barw b{font-size:13px;min-width:20px;text-align:right;color:var(--navy);font-variant-numeric:tabular-nums}
+/* Bento layout — one big focal block, the rest arranged around/below */
+.bento{display:grid;gap:14px;grid-template-columns:1fr}
+.bento>.card,.b-survey>.card{margin-bottom:0}
+@media(min-width:880px){
+  .bento{grid-template-columns:1.4fr 1fr 1fr;
+    grid-template-areas:"feat jobs jobs" "feat src src" "city city want" "survey survey survey";}
+  .b-feat{grid-area:feat}.b-jobs{grid-area:jobs}.b-src{grid-area:src}.b-city{grid-area:city}.b-want{grid-area:want}.b-survey{grid-area:survey}
+}
+.jobshero{background:linear-gradient(150deg,var(--navy),var(--royal));color:#fff;display:flex;flex-direction:column;justify-content:center}
+.jobshero .sechead{color:rgba(255,255,255,.72)}
+.bignum{font-size:58px;line-height:1;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.jh-sub{opacity:.85;font-size:13px;margin-top:4px;max-width:260px}
+.btn.ghost.onnavy{color:#fff;border-color:rgba(255,255,255,.5)}
+.btn.ghost.onnavy:hover{background:rgba(255,255,255,.12)}
+.minis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.mini{border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.mini b{font-size:19px;color:var(--navy);display:block;font-variant-numeric:tabular-nums;line-height:1.1}
+.mini span{font-size:11px;color:var(--muted)}
+.mini.link{cursor:pointer;transition:border-color .12s,transform .12s}
+.mini.link:hover{border-color:var(--gold);transform:translateY(-1px)}
+/* Sequenced entrance ("flow") */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1)}
+.reveal.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 .mbar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .mbar i{display:block;height:100%;background:linear-gradient(90deg,var(--royal),var(--gold))}
 .ringnum{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;font-size:18px}
@@ -634,16 +658,31 @@ async function renderCouncil(){
     ${CO.tab==='dash'?councilDash():CO.tab==='jobs'?councilJobs():councilStudents()}
   `;
   app.innerHTML = shell(body);
-  if(CO.tab==='dash'){ requestAnimationFrame(()=>{ try{ initCouncilDash(); }catch(e){} }); }
+  if(CO.tab==='dash'){ requestAnimationFrame(()=>{ try{ initCouncilDash(); }catch(e){ document.querySelectorAll('#app .reveal').forEach(x=>x.classList.add('in')); } }); }
+}
+function countUp(el){
+  const raw=el.getAttribute('data-count'); const target=parseFloat(raw)||0; const dec=raw.indexOf('.')>=0; const dur=900, t0=performance.now();
+  (function step(t){ const p=Math.min(1,(t-t0)/dur); const v=target*(1-Math.pow(1-p,3)); el.textContent=dec?v.toFixed(1):String(Math.round(v)); if(p<1) requestAnimationFrame(step); })(performance.now());
 }
 function initCouncilDash(){
-  document.querySelectorAll('#app [data-count]').forEach(el=>{
-    const raw=el.getAttribute('data-count'); const target=parseFloat(raw)||0; const dec=raw.indexOf('.')>=0;
-    const dur=850, t0=performance.now();
-    function step(t){ const p=Math.min(1,(t-t0)/dur); const v=target*(1-Math.pow(1-p,3)); el.textContent=dec?v.toFixed(1):String(Math.round(v)); if(p<1) requestAnimationFrame(step); }
-    requestAnimationFrame(step);
+  const head=document.querySelector('#app .dashhead');
+  const bento=document.querySelector('#app .bento');
+  const blocks=[]; if(head) blocks.push(head); if(bento) blocks.push(...bento.children);
+  let reduce=false; try{ reduce=matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(e){}
+  blocks.forEach((el,i)=>{
+    const run=()=>{
+      el.classList.add('in');
+      el.querySelectorAll('[data-count]').forEach(countUp);
+      requestAnimationFrame(()=> el.querySelectorAll('.track i[data-w]').forEach(t=>{ t.style.width=t.getAttribute('data-w'); }));
+    };
+    if(reduce){
+      el.classList.add('in');
+      el.querySelectorAll('[data-count]').forEach(c=>{ c.textContent=c.getAttribute('data-count'); });
+      el.querySelectorAll('.track i[data-w]').forEach(t=>{ t.style.width=t.getAttribute('data-w'); });
+    } else {
+      setTimeout(run, 90 + i*95); // staggered flow
+    }
   });
-  requestAnimationFrame(()=>{ document.querySelectorAll('#app .track i[data-w]').forEach(el=>{ const w=el.getAttribute('data-w'); requestAnimationFrame(()=>{ el.style.width=w; }); }); });
 }
 function donutSVG(segs,center,sub){
   const total=segs.reduce((a,s)=>a+s.value,0);
@@ -682,41 +721,50 @@ function councilDash(){
   const jtEntries=Object.entries(byJT).sort((a,b)=>b[1]-a[1]);
   const statusSegs=[{label:'Approved',value:approved,color:'#2f9e67'},{label:'Pending',value:pending,color:'#C69E55'},{label:'Rejected',value:rejected,color:'#c0504d'}];
   const srcColors=i=>['#12305A','#002474','#C69E55','#664E21','#9aa4b6','#3a7bd5'][i%6];
-  const tile=(n,label,tab,hint)=>`<div class="ctile ${tab?'link':''}" ${tab?`data-act="ctab" data-t="${tab}"`:''}><b data-count="${n}">0</b><div class="lbl">${label}</div>${hint?`<div class="go">${hint} →</div>`:''}</div>`;
+  const mini=(n,label,tab)=>`<div class="mini ${tab?'link':''}" ${tab?`data-act="ctab" data-t="${tab}"`:''}><b data-count="${n}">0</b><span>${label}</span></div>`;
   const now=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   return `
-  <div class="dashhead">
+  <div class="dashhead reveal">
     <div><div style="font-size:12px;opacity:.78;text-transform:uppercase;letter-spacing:.08em">Future Leaders Council</div>
       <h2 style="margin:4px 0 2px;color:#fff;font-size:24px">Command center</h2>
       <div style="opacity:.82;font-size:13px">${now} · a live look at everyone and everything on the platform</div></div>
     <button class="btn gold" data-act="refreshjobs">↻ Refresh jobs</button>
   </div>
-  <div class="grid six">
-    ${tile(tot,'Students','students','View')}
-    ${tile(pending,'Awaiting review','students','Review')}
-    ${tile(visible,'Visible',null)}
-    ${tile(J.length,'Jobs in feed','jobs','View')}
-    ${tile(done,'Questionnaires',null)}
-    ${tile(minors,'Under 18',null)}
-  </div>
-  <div class="grid two" style="margin-top:16px">
-    <div class="card"><p class="sechead">Students by status</p>
-      <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">${donutSVG(statusSegs,tot,tot===1?'student':'students')}${legendRows(statusSegs)}</div>
+  <div class="bento">
+    <div class="card b-feat reveal">
+      <p class="sechead">Students</p>
+      <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">
+        ${donutSVG(statusSegs,tot,tot===1?'student':'students')}
+        ${legendRows(statusSegs)}
+      </div>
+      <div class="minis">
+        ${mini(pending,'Awaiting review','students')}
+        ${mini(visible,'Visible now',null)}
+        ${mini(done,'Questionnaires',null)}
+        ${mini(minors,'Under 18',null)}
+      </div>
     </div>
-    <div class="card"><p class="sechead">Jobs by source</p>
+    <div class="card b-jobs jobshero reveal">
+      <p class="sechead">Jobs in the feed</p>
+      <b class="bignum" data-count="${J.length}">0</b>
+      <div class="jh-sub">live openings across the Rio Grande Valley</div>
+      <div class="row" style="margin-top:14px;gap:8px">
+        <button class="btn gold sm" data-act="refreshjobs">↻ Refresh</button>
+        <button class="btn ghost sm onnavy" data-act="ctab" data-t="jobs">View all →</button>
+      </div>
+    </div>
+    <div class="card b-src reveal"><p class="sechead">Jobs by source</p>
       ${srcEntries.length?barList(srcEntries,srcColors):'<p class="small muted">No jobs yet — press “Refresh jobs” to pull live openings.</p>'}
     </div>
-  </div>
-  <div class="grid two">
-    <div class="card"><p class="sechead">Where the jobs are</p>
+    <div class="card b-city reveal"><p class="sechead">Where the jobs are</p>
       ${cityEntries.length?barList(cityEntries):'<p class="small muted">—</p>'}
     </div>
-    <div class="card"><p class="sechead">What students are looking for</p>
+    <div class="card b-want reveal"><p class="sechead">What students are looking for</p>
       ${jtEntries.length?barList(jtEntries,()=>'linear-gradient(90deg,var(--royal),var(--gold))'):'<p class="small muted">No profiles yet.</p>'}
     </div>
+    <div class="b-survey reveal">${councilIntakeAnalytics()}</div>
   </div>
-  ${councilIntakeAnalytics()}
-  <div class="row" style="margin-top:4px">
+  <div class="row" style="margin-top:14px">
     <button class="btn ghost sm" data-act="export" data-k="students">Export students CSV</button>
   </div>`;
 }
