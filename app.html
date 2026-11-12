@@ -1445,11 +1445,12 @@ async function uploadPhoto(file){
   const el=document.getElementById('pc-av');
   if(el){ const r=new FileReader(); r.onload=function(){ el.innerHTML='<img src="'+r.result+'" alt="">'; }; r.readAsDataURL(file); }
   const { error } = await sb.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type});
-  if(error){ toast('err',error.message); return; }
-  await sb.from('students').update({photo_path:path}).eq('id',uid);
+  if(error){ toast('err','Photo upload failed — run flc-connect-profile.sql in Supabase. ('+error.message+')'); return; }
+  const upd = await sb.from('students').update({photo_path:path}).eq('id',uid);
+  if(upd.error){ toast('err','Could not save photo — run flc-connect-profile.sql in Supabase. ('+upd.error.message+')'); return; }
   if(STU.data) STU.data.photo_path=path;
   try{ const { data } = await sb.storage.from('avatars').createSignedUrl(path,3600); STU.photoUrl=data&&data.signedUrl; }catch(_){}
-  toast('ok','Photo updated.');
+  toast('ok','Photo saved.');
 }
 async function saveIntake(form, fd){
   const uid=STATE.session.user.id;
