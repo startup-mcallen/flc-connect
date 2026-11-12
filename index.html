@@ -145,6 +145,17 @@ h1 .ln>span{display:block}
 .ctaband h2{font-size:clamp(26px,4vw,40px);margin:0 0 10px;color:var(--cream)}
 .ctaband p{color:var(--mist);margin:0 0 24px}
 footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42px;font-size:13px}
+/* council mission / vision band */
+.council{display:flex;gap:26px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px;margin-bottom:56px;box-shadow:0 14px 40px rgba(19,32,58,.07)}
+.council .seal{flex:0 0 auto;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
+.council .seal img{width:100%;height:100%;object-fit:contain}
+.council .c-body{flex:1;min-width:0}
+.council .tag{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.council h3{font-size:20px;margin:6px 0 2px;color:#13203a}
+.council .mv{margin-top:14px}
+.council .mv .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--royal);margin-bottom:3px}
+.council .mv p{color:#5b6676;font-size:14px;margin:0 0 12px;line-height:1.6}
+@media(max-width:620px){.council{flex-direction:column;text-align:center;padding:24px}.council .mv{text-align:left}}
 </style>
 </head>
 <body>
@@ -247,6 +258,21 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
       <p>Free for every student in the Rio Grande Valley.</p>
       <a class="btn gold" href="app.html">Create your free profile &rarr;</a>
     </div>
+
+    <div class="council">
+      <div class="seal"><img id="council-seal" alt="Hidalgo County Future Leaders Council"></div>
+      <div class="c-body">
+        <div class="tag">Learn · Serve · Lead</div>
+        <h3 class="slab">Hidalgo County Future Leaders Council</h3>
+        <div class="mv">
+          <div class="lbl">Our mission</div>
+          <p>A hybrid, county-led civic leadership initiative created to invest in the next generation of community leaders — connecting young adults to local government, civic engagement, and regional opportunity, and working to retain, attract, develop, and empower young talent across the Rio Grande Valley.</p>
+          <div class="lbl">Our vision</div>
+          <p>To help transform Hidalgo County into a premier destination for young people — cultivating professional opportunities, developing local talent, and enhancing quality of life — so the region keeps its next generation and attracts young professionals from across Texas.</p>
+        </div>
+      </div>
+    </div>
+    <script>(function(){try{var b=document.querySelector('.brand img');var s=document.getElementById('council-seal');if(b&&s)s.src=b.src;}catch(e){}})();</script>
   </div>
   <footer>Hidalgo County Future Leaders Council · FLC Connect</footer>
 </div>
