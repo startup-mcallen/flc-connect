@@ -109,6 +109,38 @@ textarea{min-height:90px;resize:vertical}
 .reveal.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 .mbar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+/* ---- Profile builder: autocomplete + photo + card ---- */
+.acfield{position:relative}
+.dd{position:absolute;left:0;right:0;top:100%;z-index:50;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 40px rgba(12,30,60,.16);margin-top:4px;max-height:260px;overflow:auto;display:none}
+.dd.open{display:block}
+.dd .opt{padding:10px 12px;cursor:pointer;font-size:14px;border-bottom:1px solid #f1ebdd}
+.dd .opt:last-child{border-bottom:0}
+.dd .opt.active,.dd .opt:hover{background:#f6f1e6}
+.dd .opt b{color:var(--navy)}
+.dd .opt .add{color:var(--royal);font-weight:700}
+.sk-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.sk-chip{display:inline-flex;align-items:center;gap:7px;background:var(--cream);border:1px solid var(--line);color:var(--navy);font-weight:600;font-size:13px;padding:6px 8px 6px 13px;border-radius:999px}
+.sk-chip .x{width:17px;height:17px;border-radius:50%;background:#e2d9c6;color:#6b5a33;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;line-height:1}
+.sk-chip .x:hover{background:var(--gold);color:#241a09}
+.photorow{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.pc-avwrap{position:relative;width:72px;height:72px;flex:0 0 auto}
+.pc-av{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Alfa Slab One',serif;font-size:27px;color:#241a09;overflow:hidden;background:linear-gradient(150deg,var(--gold),#E7C988);box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.pc-av img{width:100%;height:100%;object-fit:cover}
+.avcam{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--navy);border:2px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer}
+.avcam:hover{background:var(--royal)}
+/* profile card (view mode) */
+.pcard{background:var(--white);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-bottom:16px}
+.phead{background:radial-gradient(130% 160% at 85% -20%, #1b3e74, var(--navy) 55%, #0C1E3C);color:#fff;padding:24px;display:flex;gap:18px;align-items:center;position:relative}
+.phead .hid{flex:1;min-width:0}
+.phead .nm{font-size:21px;font-weight:800;line-height:1.1}
+.phead .hl{color:#E7C988;font-weight:600;font-size:14px;margin-top:2px}
+.phead .meta{color:#c9d4ea;font-size:12.5px;margin-top:7px;display:flex;gap:14px;flex-wrap:wrap}
+.pc-crest{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:92px;text-align:center}
+.pc-crest .badge{width:52px;height:52px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.28);border:1.5px solid rgba(255,255,255,.25)}
+.pc-crest .sn{font-size:10px;color:#c9d4ea;line-height:1.2}
+.pc-skills{display:flex;flex-wrap:wrap;gap:9px}
+.pc-skill{display:inline-flex;align-items:center;gap:7px;background:var(--cream);border:1px solid var(--line);color:var(--navy);font-weight:600;font-size:13px;padding:8px 14px;border-radius:999px}
+.pc-skill .d{width:8px;height:8px;border-radius:50%;background:linear-gradient(150deg,#E7C988,var(--gold))}
 .mbar i{display:block;height:100%;background:linear-gradient(90deg,var(--royal),var(--gold))}
 .ringnum{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;font-size:18px}
 /* ---- Polish & motion ---- */
@@ -218,6 +250,48 @@ const INTAKE = {
   help_needed: [["resume","Resume help"],["interview","Interview practice"],["finding","Finding jobs"],["applying","Help applying"],["transport","Transportation"],["skills","Learning new skills"],["mentor","A mentor"],["college","College / scholarship info"]]
 };
 const intakeLabel = (group,v) => ((INTAKE[group]||[]).find(o=>o[0]===v)||[v,v])[1];
+
+// ---- Curated RGV schools (official names) + student skill base (LinkedIn-style) ----
+const SCHOOLS=["The University of Texas Rio Grande Valley (UTRGV)","South Texas College","Texas State Technical College – Harlingen","Texas A&M University–Kingsville","UTRGV School of Medicine","PSJA Early College High School","PSJA North Early College High School","PSJA Southwest Early College High School","PSJA Thomas Jefferson T-STEM Early College High School","PSJA Memorial Early College High School","McAllen High School","McAllen Memorial High School","McAllen Rowe High School","Lamar Academy","Edinburg High School","Edinburg North High School","Robert Vela High School","Economedes High School","Mission High School","Veterans Memorial High School (Mission)","Mission Collegiate High School","Sharyland High School","Sharyland Pioneer High School","La Joya High School","Juarez-Lincoln High School","Jimmy Carter Early College High School","Hidalgo Early College High School","Weslaco High School","Weslaco East High School","Donna High School","Donna North High School","Mercedes High School","Harlingen High School","Harlingen High School South","Early College High School (Harlingen)","San Benito High School","Los Fresnos High School","Port Isabel High School","Brownsville Early College High School","Hanna Early College High School","Porter Early College High School","Pace Early College High School","Rivera Early College High School","Lopez Early College High School","Veterans Memorial Early College High School (Brownsville)","Rio Grande City High School","Roma High School","La Feria High School","Raymondville High School","IDEA College Prep (RGV)","Valley View High School","La Villa High School","Progreso High School","Lyford High School"];
+const SKILLS=["Customer service","Communication","Teamwork","Leadership","Time management","Problem solving","Adaptability","Work ethic","Attention to detail","Organization","Critical thinking","Reliability","Multitasking","Public speaking","Active listening","Conflict resolution","Decision making","Creativity","Collaboration","Initiative","Dependability","Punctuality","Patience","Bilingual (English/Spanish)","Spanish","English","Translation","Interpreting","Microsoft Office","Microsoft Word","Microsoft Excel","Microsoft PowerPoint","Microsoft Outlook","Google Workspace","Google Docs","Google Sheets","Google Slides","Data entry","Typing","Filing","Scheduling","Bookkeeping","Record keeping","Cash handling","Point of sale (POS)","Inventory management","Stocking","Merchandising","Sales","Retail","Upselling","Phone etiquette","Email","Receptionist","Front desk","Appointment setting","Administrative support","Social media","Instagram","TikTok","Facebook","Content creation","Copywriting","Caption writing","Hashtag strategy","Canva","Graphic design","Photo editing","Video editing","Photography","Videography","Adobe Photoshop","Adobe Illustrator","Adobe Premiere","CapCut","Branding","Marketing","Digital marketing","Email marketing","Event planning","Fundraising","Blogging","Storytelling","Presentation design","Computer skills","Troubleshooting","Technical support","Help desk","Hardware","Software installation","Networking","Windows","macOS","Chromebook","Cybersecurity basics","IT support","HTML","CSS","JavaScript","Python","Java","C++","SQL","Scratch","Web design","App development","Coding","Data analysis","Spreadsheets","Robotics","3D printing","CAD","AutoCAD","Game design","Patient care","First aid","CPR","Vital signs","Medical terminology","Caregiving","Infection control","Phlebotomy basics","Nursing assistant","Pharmacy basics","Dental assisting","Sanitation","HIPAA awareness","Food preparation","Cooking","Baking","Food safety","Serving","Hosting","Barista","Bartending basics","Catering","Dishwashing","Kitchen cleaning","Restaurant service","Carpentry","Welding","Electrical basics","Plumbing basics","Automotive repair","Oil changes","HVAC basics","Painting","Landscaping","Lawn care","Construction","Forklift operation","Warehouse","Packing","Shipping and receiving","Logistics","Equipment operation","Power tools","Hand tools","Measuring","Blueprint reading","Tutoring","Mentoring","Childcare","Babysitting","Coaching","Lesson planning","Classroom support","Camp counseling","Cleaning","Housekeeping","Janitorial","Groundskeeping","Pet care","Animal handling","Cashiering","Money handling","Budgeting","Accounting basics","Math","Statistics","Research","Note taking","Writing","Editing","Proofreading","Reading comprehension","Project management","Team building","Volunteering","Community outreach","Nonprofit experience","Club leadership","Student government","Debate","Art","Drawing","Music","Dance","Sports","Driving","Valid driver's license","Delivery","Route planning","Sign language (ASL)","French","Customer relationship management (CRM)","QuickBooks","Salesforce basics","Google Forms","Zoom","Microsoft Teams","Slack","Trello","Notion","Survey design"];
+
+function hueOf(s){var h=0;s=''+s;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h;}
+function crestColor(n){var p=[['#12305A','#24538f'],['#5a2a12','#9a6b2a'],['#1f5137','#2f9e67'],['#4a1d57','#8a3fb0'],['#153a52','#2a7ea8'],['#5a1230','#a33f6b'],['#2a3d12','#6b8a2f'],['#12305A','#002474']];return p[hueOf(n||'S')%p.length];}
+function initialsOf(n){var stop={of:1,the:1,and:1,at:1,de:1,del:1,la:1};var w=(''+(n||'')).replace(/[^A-Za-z0-9 ]/g,' ').split(/\s+/).filter(function(x){return x&&!stop[x.toLowerCase()];});if(!w.length)return 'S';if(w.length===1)return w[0].slice(0,2).toUpperCase();return (w[0][0]+w[w.length-1][0]).toUpperCase();}
+
+// Generic autocomplete used by the profile builder (school + skills).
+function makeAutocomplete(inputId, ddId, getList, onPick, opts){
+  opts=opts||{};
+  var input=document.getElementById(inputId), dd=document.getElementById(ddId); if(!input||!dd) return;
+  var active=-1, items=[];
+  function close(){ dd.classList.remove('open'); active=-1; }
+  function build(q){
+    var ql=(q||'').trim().toLowerCase(), list=getList();
+    items = ql? list.filter(function(s){return s.toLowerCase().indexOf(ql)>=0;}) : (opts.showAllOnFocus? list.slice(0): []);
+    if(ql) items.sort(function(a,b){ return a.toLowerCase().indexOf(ql)-b.toLowerCase().indexOf(ql); });
+    items=items.slice(0,8);
+    var html=items.map(function(s,i){return '<div class="opt'+(i===active?' active':'')+'" data-i="'+i+'">'+hi(s,ql)+'</div>';}).join('');
+    var exact=list.some(function(s){return s.toLowerCase()===ql;});
+    if(ql && !exact && opts.allowCustom){ html+='<div class="opt" data-custom="1"><span class="add">+ Add “'+esc(q.trim())+'”</span></div>'; }
+    if(!html){ close(); return; }
+    dd.innerHTML=html; dd.classList.add('open');
+  }
+  function hi(s,q){ if(!q) return esc(s); var i=s.toLowerCase().indexOf(q); if(i<0) return esc(s); return esc(s.slice(0,i))+'<b>'+esc(s.slice(i,i+q.length))+'</b>'+esc(s.slice(i+q.length)); }
+  input.addEventListener('input', function(){ active=-1; build(input.value); });
+  input.addEventListener('focus', function(){ if(opts.showAllOnFocus||input.value) build(input.value); });
+  input.addEventListener('keydown', function(e){
+    if(!dd.classList.contains('open')) return;
+    var els=dd.querySelectorAll('.opt');
+    if(e.key==='ArrowDown'){e.preventDefault();active=Math.min(els.length-1,active+1);paint(els);}
+    else if(e.key==='ArrowUp'){e.preventDefault();active=Math.max(0,active-1);paint(els);}
+    else if(e.key==='Enter'){e.preventDefault();var el=els[active<0?0:active];if(el)choose(el);}
+    else if(e.key==='Escape'){close();}
+  });
+  function paint(els){ els.forEach(function(el,i){el.classList.toggle('active',i===active);}); }
+  dd.addEventListener('mousedown', function(e){ var el=e.target.closest('.opt'); if(el){e.preventDefault();choose(el);} });
+  function choose(el){ var val = el.hasAttribute('data-custom')? input.value.trim() : items[+el.getAttribute('data-i')]; onPick(val); close(); }
+  document.addEventListener('click', function(e){ if(e.target!==input && !dd.contains(e.target)) close(); });
+}
 
 // ====== STATE ======
 let STATE = { session:null, profile:null, loading:true };
@@ -407,13 +481,16 @@ function renderPickRole(){
 }
 
 // ====== STUDENT ======
-let STU = { data:null, contact:null, intros:[], jobs:[], intake:null, intakeEdit:false, tab:'home', loaded:false };
+let STU = { data:null, contact:null, intros:[], jobs:[], intake:null, intakeEdit:false, name:null, photoUrl:null, skillsDraft:null, editing:false, tab:'home', loaded:false };
 async function loadStudent(){
   const uid = STATE.session.user.id;
   const { data:s } = await sb.from('students').select('*').eq('id',uid).maybeSingle();
   STU.data = s;
   const { data:c } = await sb.from('student_contacts').select('*').eq('student_id',uid).maybeSingle();
   STU.contact = c;
+  try{ const { data:pf } = await sb.from('profiles').select('full_name').eq('id',uid).maybeSingle(); STU.name = pf && pf.full_name; }catch(_){ STU.name=null; }
+  STU.photoUrl = null;
+  if(s && s.photo_path){ try{ const { data:pu } = await sb.storage.from('avatars').createSignedUrl(s.photo_path,3600); STU.photoUrl = pu && pu.signedUrl; }catch(_){ STU.photoUrl=null; } }
   try{ const { data:intake } = await sb.from('student_intake').select('*').eq('student_id',uid).maybeSingle(); STU.intake = intake; }catch(_){ STU.intake = null; }
   const { data:ir } = await sb.from('intro_requests')
     .select('*, employers(org_name, industry, website, description)')
@@ -436,30 +513,81 @@ async function renderStudent(){
     ${STU.tab==='matches'?studentMatches():STU.tab==='profile'?studentProfile(s):studentDashboard()}
   `;
   app.innerHTML = shell(body);
+  if(STU.tab==='profile' && document.getElementById('school-input')){ try{ initBuilder(); }catch(e){} }
 }
+function initBuilder(){
+  if(!STU.skillsDraft) STU.skillsDraft = ((STU.data && STU.data.skills) || []).slice();
+  renderSkillChips();
+  makeAutocomplete('school-input','school-dd', function(){ return SCHOOLS; }, function(val){ var el=document.getElementById('school-input'); if(el) el.value=val; }, { allowCustom:true, showAllOnFocus:true });
+  makeAutocomplete('skill-input','skill-dd', function(){ return SKILLS.filter(function(s){ return STU.skillsDraft.indexOf(s)<0; }); }, function(val){ if(val && STU.skillsDraft.indexOf(val)<0) STU.skillsDraft.push(val); var si=document.getElementById('skill-input'); if(si) si.value=''; renderSkillChips(); }, { allowCustom:true });
+}
+function renderSkillChips(){
+  var box=document.getElementById('sk-chips'); if(!box) return;
+  box.innerHTML=(STU.skillsDraft||[]).map(function(s,i){ return '<span class="sk-chip">'+esc(s)+'<span class="x" data-rmskill="'+i+'">×</span></span>'; }).join('');
+}
+function profileStarted(s){ return !!(s && (s.school || (s.skills&&s.skills.length) || (s.headline&&s.headline.trim()))); }
 function studentProfile(s){
-  const has = STU.data!=null;
+  return (profileStarted(s) && !STU.editing) ? studentCardView(s) : studentBuilder(s);
+}
+function studentCardView(s){
+  const name = STU.name || s.headline || 'Your profile';
+  const av = initialsOf(STU.name || s.headline || 'S');
+  const school = s.school || '';
+  const col = crestColor(school), ini = initialsOf(school);
+  const photo = STU.photoUrl;
+  const skills = s.skills || [];
+  const modPill = s.moderation?`<span class="pill ${s.moderation}">${s.moderation}</span>`:'';
+  const pubPill = s.published?'<span class="pill approved">Visible</span>':'<span class="pill pending">Hidden</span>';
+  return `
+  <div class="pcard">
+    <div class="phead">
+      <div class="pc-avwrap"><div class="pc-av">${photo?`<img src="${esc(photo)}" alt="">`:esc(av)}</div></div>
+      <div class="hid">
+        <div class="nm">${esc(name)}</div>
+        ${s.headline?`<div class="hl">${esc(s.headline)}</div>`:''}
+        <div class="meta">${s.grad_year?`<span>🎓 Class of ${esc(s.grad_year)}</span>`:''}${s.city?`<span>📍 ${esc(s.city)}, TX</span>`:''}</div>
+      </div>
+      ${school?`<div class="pc-crest"><div class="badge" style="background:linear-gradient(150deg,${col[1]},${col[0]})">${esc(ini)}</div><div class="sn">${esc(school)}</div></div>`:''}
+    </div>
+    <div style="padding:22px 24px">
+      ${skills.length?`<div class="sechead" style="margin-bottom:10px">Skills</div><div class="pc-skills">${skills.map(k=>`<span class="pc-skill"><i class="d"></i>${esc(k)}</span>`).join('')}</div>`:''}
+      ${s.bio?`<div style="margin-top:16px"><div class="sechead" style="margin-bottom:6px">About</div><p class="small" style="margin:0">${esc(s.bio)}</p></div>`:''}
+      <div class="row" style="margin-top:18px;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div class="row" style="gap:8px;align-items:center">${modPill} ${pubPill} <span class="small muted">${s.resume_path?'Resume ✓':'No resume yet'}</span></div>
+        <div class="row" style="gap:8px">
+          <button class="btn ${s.published?'ghost':'gold'} sm" type="button" data-act="togglepub">${s.published?'Pause my profile':'Activate my profile'}</button>
+          <button class="btn navy sm" type="button" data-act="editprofile">Edit profile</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function studentBuilder(s){
+  const started = profileStarted(s);
   const jt = s.job_types||[];
-  const skills=(s.skills||[]).join(', '); const interests=(s.interests||[]).join(', ');
-  const modPill = has?`<span class="pill ${s.moderation}">${s.moderation}</span>`:'';
-  const pubPill = has?(s.published?'<span class="pill approved">Visible</span>':'<span class="pill pending">Hidden</span>'):'';
+  const interests=(s.interests||[]).join(', ');
+  const av = initialsOf(STU.name || s.headline || 'S');
+  const photo = STU.photoUrl;
   return `
   <div class="card">
-    <div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">Student profile</h2>
-      <div class="row">${modPill} ${pubPill}</div>
-    </div>
-    <p class="muted small">Your profile and resume stay private. The council reviews it for safety, and we use it to match you with real local jobs. The more complete it is, the better your matches.</p>
+    <h2 style="margin:0 0 2px">${started?'Edit your profile':'Build your profile'}</h2>
+    <p class="muted small">Your profile and resume stay private. The council reviews it, and we use it to match you with real local jobs. The more complete it is, the better your matches.</p>
     <form data-form="student">
+      <div class="photorow">
+        <div class="pc-avwrap"><div class="pc-av" id="pc-av">${photo?`<img src="${esc(photo)}" alt="">`:esc(av)}</div>
+          <label class="avcam" title="Upload a photo">📷<input type="file" accept="image/*" data-photo style="display:none"></label></div>
+        <div><strong>Profile photo</strong><div class="small muted">Tap the camera to add a photo. Optional.</div></div>
+      </div>
       <div class="grid two">
-        <div><label>School</label><input name="school" value="${esc(s.school)}"></div>
+        <div class="acfield"><label>School / University</label><input id="school-input" name="school" autocomplete="off" placeholder="Start typing… UTRGV, PSJA, STC" value="${esc(s.school)}"><div class="dd" id="school-dd"></div></div>
         <div><label>Expected graduation year</label><input name="grad_year" type="number" value="${esc(s.grad_year)}"></div>
       </div>
       <label>Headline (what you want to do)</label><input name="headline" placeholder="e.g. Marketing &amp; social media" value="${esc(s.headline)}">
       <label>City</label><input name="city" value="${esc(s.city)}">
       <label>About you</label><textarea name="bio" placeholder="A few sentences about your goals and experience.">${esc(s.bio)}</textarea>
-      <label>Skills (comma separated)</label><input name="skills" value="${esc(skills)}">
-      <label>Interests (comma separated)</label><input name="interests" value="${esc(interests)}">
+      <div class="acfield"><label>Skills</label><input id="skill-input" autocomplete="off" placeholder="Type a skill… Canva, Customer service, Bilingual"><div class="dd" id="skill-dd"></div></div>
+      <div class="sk-chips" id="sk-chips"></div>
+      <label style="margin-top:14px">Interests (comma separated)</label><input name="interests" value="${esc(interests)}">
       <label>Job types you want</label>
       <div class="chips" data-chips="job_types">
         ${JOB_TYPES.map(j=>`<span class="chip ${jt.includes(j[0])?'on':''}" data-v="${j[0]}">${j[1]}</span>`).join('')}
@@ -486,7 +614,7 @@ function studentProfile(s){
       <div id="resumebox">${resumeBox(s)}</div>
       <div class="row" style="margin-top:18px;justify-content:space-between">
         <button class="btn navy" type="submit">Save profile</button>
-        ${has?`<button class="btn ${s.published?'ghost':'gold'}" type="button" data-act="togglepub">${s.published?'Pause my profile':'Activate my profile'}</button>`:''}
+        ${started?`<button class="btn ghost" type="button" data-act="canceledit">Cancel</button>`:''}
       </div>
     </form>
   </div>`;
@@ -838,11 +966,12 @@ function closeModal(){ const b=document.getElementById('mroot'); if(b) b.innerHT
 async function openStudent(id){
   const s=CO.students.find(x=>x.id===id); if(!s) return;
   showModal('<div class="modal-body center" style="padding:40px">Loading…</div>');
-  let prof=null,contact=null,resumeUrl=null;
+  let prof=null,contact=null,resumeUrl=null,avatarUrl=null;
   try{
     const r1=await sb.from('profiles').select('full_name').eq('id',id).maybeSingle(); prof=r1.data;
     const r2=await sb.from('student_contacts').select('*').eq('student_id',id).maybeSingle(); contact=r2.data;
     if(s.resume_path){ const r3=await sb.storage.from('resumes').createSignedUrl(s.resume_path,300); resumeUrl=r3.data&&r3.data.signedUrl; }
+    if(s.photo_path){ const r4=await sb.storage.from('avatars').createSignedUrl(s.photo_path,300); avatarUrl=r4.data&&r4.data.signedUrl; }
   }catch(e){}
   const name=prof&&prof.full_name?prof.full_name:'Student';
   const kv=(k,v)=> v?`<div class="kv"><b>${esc(k)}</b><div>${v}</div></div>`:'';
@@ -864,9 +993,10 @@ async function openStudent(id){
   const body=`
     <div class="modal-head">
       <div class="row" style="gap:12px">
-        <div class="avatar">${esc((name[0]||'S'))}</div>
+        <div class="avatar" style="overflow:hidden">${avatarUrl?`<img src="${esc(avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover">`:esc((name[0]||'S'))}</div>
         <div><strong style="font-size:17px">${esc(name)}</strong>
-        <div class="small muted">${esc(s.headline||'')}</div></div>
+        <div class="small muted">${esc(s.headline||'')}</div>
+        ${s.school?`<span style="display:inline-flex;align-items:center;gap:6px;margin-top:4px"><span style="width:22px;height:22px;border-radius:6px;background:linear-gradient(150deg,${crestColor(s.school)[1]},${crestColor(s.school)[0]});color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center">${esc(initialsOf(s.school))}</span><span class="small muted">${esc(s.school)}</span></span>`:''}</div>
       </div>
       <button class="xbtn" data-act="closemodal" aria-label="Close">×</button>
     </div>
@@ -1206,10 +1336,14 @@ document.addEventListener('submit', async (ev)=>{
 });
 
 document.addEventListener('click', async (ev)=>{
+  const rmk = ev.target.closest('[data-rmskill]');
+  if(rmk && STU.skillsDraft){ STU.skillsDraft.splice(+rmk.getAttribute('data-rmskill'),1); renderSkillChips(); return; }
   const t = ev.target.closest('[data-act]'); if(!t) return;
   const act = t.getAttribute('data-act');
   try{
     if(act==='reload') return location.reload();
+    if(act==='editprofile'){ STU.editing=true; STU.skillsDraft=((STU.data&&STU.data.skills)||[]).slice(); return renderStudent(); }
+    if(act==='canceledit'){ STU.editing=false; STU.skillsDraft=null; return renderStudent(); }
     if(act==='usermenu'){ const m=document.getElementById('usermenu-pop'); if(m) m.classList.toggle('hide'); return; }
     if(act==='signout') return signOut();
     if(act==='go'){ location.hash=t.getAttribute('data-h'); return render(); }
@@ -1247,6 +1381,7 @@ document.addEventListener('keydown',(ev)=>{ if(ev.key==='Escape') closeModal(); 
 document.addEventListener('change', async (ev)=>{
   if(ev.target.name==='is_minor'){ document.querySelectorAll('[data-minor]').forEach(x=>x.style.display=ev.target.checked?'':'none'); }
   if(ev.target.hasAttribute('data-resume')){ await uploadResume(ev.target.files[0]); }
+  if(ev.target.hasAttribute('data-photo')){ await uploadPhoto(ev.target.files[0]); }
 });
 
 // ====== AUTH ACTIONS ======
@@ -1278,7 +1413,7 @@ async function createProfileRows(role, full_name){
     await sb.from('student_contacts').insert({student_id:uid, email: STATE.session.user.email});
   }
 }
-function resetCaches(){ STU={data:null,contact:null,intros:[],jobs:[],intake:null,intakeEdit:false,tab:'profile',loaded:false}; EMP={data:null,students:[],myreqs:[],tab:'browse',loaded:false}; CO={employers:[],students:[],intros:[],jobs:[],intakes:[],tab:'dash',loaded:false}; }
+function resetCaches(){ STU={data:null,contact:null,intros:[],jobs:[],intake:null,intakeEdit:false,name:null,photoUrl:null,skillsDraft:null,editing:false,tab:'profile',loaded:false}; EMP={data:null,students:[],myreqs:[],tab:'browse',loaded:false}; CO={employers:[],students:[],intros:[],jobs:[],intakes:[],tab:'dash',loaded:false}; }
 
 // ====== STUDENT ACTIONS ======
 function collectChips(form,name){ return [...form.querySelectorAll(`[data-chips="${name}"] .chip.on`)].map(c=>c.getAttribute('data-v')); }
@@ -1288,7 +1423,7 @@ async function saveStudent(form, fd){
   const payload={
     school:fd.school||null, grad_year:fd.grad_year?parseInt(fd.grad_year):null,
     headline:fd.headline||null, city:fd.city||null, bio:fd.bio||null,
-    skills:splitList(fd.skills), interests:splitList(fd.interests),
+    skills: (STU.skillsDraft ? STU.skillsDraft.slice() : splitList(fd.skills)), interests:splitList(fd.interests),
     job_types:collectChips(form,'job_types'),
     is_minor:!!form.querySelector('[name=is_minor]')?.checked,
     guardian_name:fd.guardian_name||null, guardian_email:fd.guardian_email||null,
@@ -1297,7 +1432,24 @@ async function saveStudent(form, fd){
   const { error } = await sb.from('students').update(payload).eq('id',uid);
   if(error) throw error;
   await sb.from('student_contacts').upsert({student_id:uid, email:fd.c_email||null, phone:fd.c_phone||null});
+  STU.editing=false; STU.skillsDraft=null; STU.tab='profile';
   setFlash('ok','Profile saved.'); STU.loaded=false; await renderStudent();
+}
+async function uploadPhoto(file){
+  if(!file) return;
+  if(file.type.indexOf('image/')!==0){ toast('err','Please choose an image file.'); return; }
+  const uid=STATE.session.user.id;
+  const ext=(file.type==='image/png')?'png':'jpg';
+  const path=`${uid}/avatar.${ext}`;
+  // instant local preview
+  const el=document.getElementById('pc-av');
+  if(el){ const r=new FileReader(); r.onload=function(){ el.innerHTML='<img src="'+r.result+'" alt="">'; }; r.readAsDataURL(file); }
+  const { error } = await sb.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type});
+  if(error){ toast('err',error.message); return; }
+  await sb.from('students').update({photo_path:path}).eq('id',uid);
+  if(STU.data) STU.data.photo_path=path;
+  try{ const { data } = await sb.storage.from('avatars').createSignedUrl(path,3600); STU.photoUrl=data&&data.signedUrl; }catch(_){}
+  toast('ok','Photo updated.');
 }
 async function saveIntake(form, fd){
   const uid=STATE.session.user.id;
