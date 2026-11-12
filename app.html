@@ -63,6 +63,27 @@ textarea{min-height:90px;resize:vertical}
 .stat.link{cursor:pointer;transition:border-color .12s,box-shadow .12s,transform .12s}
 .stat.link:hover{border-color:var(--gold);box-shadow:0 3px 12px rgba(18,48,90,.08);transform:translateY(-1px)}
 .stat.link .go{font-size:12px;color:var(--royal);font-weight:700;margin-top:6px;display:block}
+/* ---- Council visual dashboard ---- */
+.dashhead{background:linear-gradient(150deg,var(--navy),var(--royal));color:#fff;border-radius:18px;padding:22px 24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.grid.six{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+@media(min-width:640px){.grid.six{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:980px){.grid.six{grid-template-columns:repeat(6,1fr)}}
+.ctile{background:linear-gradient(165deg,#fff,#fbf9f3);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+.ctile b{font-size:29px;display:block;color:var(--navy);line-height:1.05;font-variant-numeric:tabular-nums}
+.ctile .lbl{font-size:12px;color:var(--muted);margin-top:3px}
+.ctile .go{font-size:11px;color:var(--royal);font-weight:700;margin-top:6px}
+.ctile.link{cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s}
+.ctile.link:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(18,48,90,.12);border-color:var(--gold)}
+.sechead{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800;margin:0 0 12px}
+.lg{display:flex;align-items:center;gap:7px;font-size:13px}
+.lg i{width:11px;height:11px;border-radius:3px;display:inline-block;flex:0 0 auto}
+.lg b{color:var(--navy)}
+.barw{display:flex;align-items:center;gap:9px;margin:7px 0}
+.barw .l{flex:0 0 42%;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{height:9px;background:var(--cream);border-radius:5px;overflow:hidden}
+.track i{display:block;height:100%;border-radius:5px;transition:width 1s cubic-bezier(.22,1,.36,1)}
+.barw .track{flex:1}
+.barw b{font-size:13px;min-width:20px;text-align:right;color:var(--navy);font-variant-numeric:tabular-nums}
 .mbar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .mbar i{display:block;height:100%;background:linear-gradient(90deg,var(--royal),var(--gold))}
 .ringnum{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;font-size:18px}
@@ -613,52 +634,117 @@ async function renderCouncil(){
     ${CO.tab==='dash'?councilDash():CO.tab==='jobs'?councilJobs():councilStudents()}
   `;
   app.innerHTML = shell(body);
+  if(CO.tab==='dash'){ requestAnimationFrame(()=>{ try{ initCouncilDash(); }catch(e){} }); }
+}
+function initCouncilDash(){
+  document.querySelectorAll('#app [data-count]').forEach(el=>{
+    const raw=el.getAttribute('data-count'); const target=parseFloat(raw)||0; const dec=raw.indexOf('.')>=0;
+    const dur=850, t0=performance.now();
+    function step(t){ const p=Math.min(1,(t-t0)/dur); const v=target*(1-Math.pow(1-p,3)); el.textContent=dec?v.toFixed(1):String(Math.round(v)); if(p<1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  });
+  requestAnimationFrame(()=>{ document.querySelectorAll('#app .track i[data-w]').forEach(el=>{ const w=el.getAttribute('data-w'); requestAnimationFrame(()=>{ el.style.width=w; }); }); });
+}
+function donutSVG(segs,center,sub){
+  const total=segs.reduce((a,s)=>a+s.value,0);
+  const R=54,C=2*Math.PI*R,size=140,cx=size/2; let off=0;
+  const arcs=segs.filter(s=>s.value>0).map(s=>{
+    const len=s.value/(total||1)*C;
+    const el=`<circle cx="${cx}" cy="${cx}" r="${R}" fill="none" stroke="${s.color}" stroke-width="15" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cx})"/>`;
+    off+=len; return el;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" width="146" height="146" style="flex:0 0 auto">
+    <circle cx="${cx}" cy="${cx}" r="${R}" fill="none" stroke="var(--line)" stroke-width="15"/>${arcs}
+    <text x="${cx}" y="${cx-1}" text-anchor="middle" font-size="30" font-weight="800" fill="var(--navy)" data-count="${center}">0</text>
+    <text x="${cx}" y="${cx+18}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(sub||'')}</text>
+  </svg>`;
+}
+function legendRows(segs){ return `<div style="display:flex;flex-direction:column;gap:5px">${segs.map(s=>`<div class="lg"><i style="background:${s.color}"></i>${esc(s.label)} <b>${s.value}</b></div>`).join('')}</div>`; }
+function barList(entries,colorFn){
+  const mx=Math.max(1,...entries.map(e=>e[1]));
+  return entries.map(([k,c],i)=>`<div class="barw"><span class="l">${esc(k)}</span><span class="track"><i data-w="${Math.round(c/mx*100)}%" style="width:0;background:${colorFn?colorFn(i):'linear-gradient(90deg,var(--navy),var(--gold))'}"></i></span><b>${c}</b></div>`).join('');
 }
 function councilDash(){
-  const tot=CO.students.length;
-  const ps=CO.students.filter(s=>s.moderation==='pending').length;
-  const vs=CO.students.filter(s=>s.published&&s.moderation==='approved').length;
-  const minors=CO.students.filter(s=>s.is_minor).length;
-  const card=(n,label,tab)=> tab
-    ? `<div class="stat link" data-act="ctab" data-t="${tab}"><b>${n}</b>${label}<span class="go">View ${tab} →</span></div>`
-    : `<div class="stat"><b>${n}</b>${label}</div>`;
-  return `<div class="grid three">
-    ${card(tot,'Students registered','students')}
-    ${card(ps,'Students awaiting moderation','students')}
-    ${card(vs,'Visible students','students')}
-    ${card((CO.jobs||[]).length,'Jobs in the feed','jobs')}
-    ${card(minors,'Students under 18',null)}
+  const S=CO.students||[], J=CO.jobs||[];
+  const tot=S.length;
+  const approved=S.filter(s=>s.moderation==='approved').length;
+  const pending=S.filter(s=>s.moderation==='pending').length;
+  const rejected=S.filter(s=>s.moderation==='rejected').length;
+  const visible=S.filter(s=>s.published&&s.moderation==='approved').length;
+  const minors=S.filter(s=>s.is_minor).length;
+  const done=(CO.intakes||[]).length;
+  const srcName={adzuna:'Adzuna',usajobs:'USAJOBS (federal)',muse:'The Muse',curated:'Added by council',seed:'Examples'};
+  const bySrc={}; J.forEach(j=>{const k=j.source||'other'; bySrc[k]=(bySrc[k]||0)+1;});
+  const srcEntries=Object.entries(bySrc).sort((a,b)=>b[1]-a[1]).map(([k,c])=>[srcName[k]||k,c]);
+  const byCity={}; J.forEach(j=>{const c=((j.city||j.location||'').split(',')[0]||'').trim(); if(c)byCity[c]=(byCity[c]||0)+1;});
+  const cityEntries=Object.entries(byCity).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const byJT={}; S.forEach(s=>(s.job_types||[]).forEach(v=>{const l=jobLabel(v); byJT[l]=(byJT[l]||0)+1;}));
+  const jtEntries=Object.entries(byJT).sort((a,b)=>b[1]-a[1]);
+  const statusSegs=[{label:'Approved',value:approved,color:'#2f9e67'},{label:'Pending',value:pending,color:'#C69E55'},{label:'Rejected',value:rejected,color:'#c0504d'}];
+  const srcColors=i=>['#12305A','#002474','#C69E55','#664E21','#9aa4b6','#3a7bd5'][i%6];
+  const tile=(n,label,tab,hint)=>`<div class="ctile ${tab?'link':''}" ${tab?`data-act="ctab" data-t="${tab}"`:''}><b data-count="${n}">0</b><div class="lbl">${label}</div>${hint?`<div class="go">${hint} →</div>`:''}</div>`;
+  const now=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  return `
+  <div class="dashhead">
+    <div><div style="font-size:12px;opacity:.78;text-transform:uppercase;letter-spacing:.08em">Future Leaders Council</div>
+      <h2 style="margin:4px 0 2px;color:#fff;font-size:24px">Command center</h2>
+      <div style="opacity:.82;font-size:13px">${now} · a live look at everyone and everything on the platform</div></div>
+    <button class="btn gold" data-act="refreshjobs">↻ Refresh jobs</button>
   </div>
-  <div class="row" style="margin-top:16px">
+  <div class="grid six">
+    ${tile(tot,'Students','students','View')}
+    ${tile(pending,'Awaiting review','students','Review')}
+    ${tile(visible,'Visible',null)}
+    ${tile(J.length,'Jobs in feed','jobs','View')}
+    ${tile(done,'Questionnaires',null)}
+    ${tile(minors,'Under 18',null)}
+  </div>
+  <div class="grid two" style="margin-top:16px">
+    <div class="card"><p class="sechead">Students by status</p>
+      <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">${donutSVG(statusSegs,tot,tot===1?'student':'students')}${legendRows(statusSegs)}</div>
+    </div>
+    <div class="card"><p class="sechead">Jobs by source</p>
+      ${srcEntries.length?barList(srcEntries,srcColors):'<p class="small muted">No jobs yet — press “Refresh jobs” to pull live openings.</p>'}
+    </div>
+  </div>
+  <div class="grid two">
+    <div class="card"><p class="sechead">Where the jobs are</p>
+      ${cityEntries.length?barList(cityEntries):'<p class="small muted">—</p>'}
+    </div>
+    <div class="card"><p class="sechead">What students are looking for</p>
+      ${jtEntries.length?barList(jtEntries,()=>'linear-gradient(90deg,var(--royal),var(--gold))'):'<p class="small muted">No profiles yet.</p>'}
+    </div>
+  </div>
+  ${councilIntakeAnalytics()}
+  <div class="row" style="margin-top:4px">
     <button class="btn ghost sm" data-act="export" data-k="students">Export students CSV</button>
-    <button class="btn gold sm" data-act="refreshjobs">Refresh</button>
-  </div>
-  ${councilIntakeAnalytics()}`;
+  </div>`;
 }
 function councilIntakeAnalytics(){
   const all=CO.intakes||[]; const n=all.length; const tot=CO.students.length;
-  if(!n) return `<div class="card" style="margin-top:16px"><strong>Student questionnaire</strong><p class="small muted" style="margin:6px 0 0">No responses yet. Students see a short questionnaire on their dashboard — answers show up here as aggregate insights.</p></div>`;
-  const multi=(group)=>{ const m={}; all.forEach(r=>(r[group]||[]).forEach(v=>{m[v]=(m[v]||0)+1;})); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
-  const single=(field)=>{ const m={}; all.forEach(r=>{ if(r[field]){m[r[field]]=(m[r[field]]||0)+1;} }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
-  const avg=(field)=>{ const v=all.map(r=>r[field]).filter(x=>x!=null); return v.length?(v.reduce((a,b)=>a+Number(b),0)/v.length).toFixed(1):'—'; };
-  const bar=(group,entries)=> entries.slice(0,6).map(([k,c])=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><span style="flex:0 0 44%;font-size:13px">${esc(intakeLabel(group,k))}</span><span style="flex:1;height:8px;background:var(--cream);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${Math.round(c/n*100)}%;background:linear-gradient(90deg,var(--navy),var(--gold))"></i></span><b style="font-size:13px;min-width:18px;text-align:right">${c}</b></div>`).join('');
+  if(!n) return `<div class="card"><p class="sechead">Student questionnaire</p><p class="small muted">No responses yet. Students see a short questionnaire on their dashboard — answers show up here as live insights.</p></div>`;
+  const multi=(group)=>{ const m={}; all.forEach(r=>(r[group]||[]).forEach(v=>{m[v]=(m[v]||0)+1;})); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,c])=>[intakeLabel(group,k),c]); };
+  const single=(field)=>{ const m={}; all.forEach(r=>{ if(r[field]){m[r[field]]=(m[r[field]]||0)+1;} }); return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,c])=>[intakeLabel(field,k),c]); };
+  const avg=(field)=>{ const v=all.map(r=>r[field]).filter(x=>x!=null); return v.length?(v.reduce((a,b)=>a+Number(b),0)/v.length):0; };
   const needRemote=all.filter(r=>r.transportation==='need_remote').length;
   const needPaper=all.filter(r=>r.work_eligible==='need_help').length;
-  return `<div class="card" style="margin-top:16px">
-    <div class="row" style="justify-content:space-between;align-items:baseline"><strong>Student questionnaire</strong><span class="small muted">${n} of ${tot} completed</span></div>
-    <div class="grid two" style="margin-top:12px;gap:22px">
-      <div><div class="small muted" style="margin-bottom:4px">What they're looking for</div>${bar('seeking',multi('seeking'))}</div>
-      <div><div class="small muted" style="margin-bottom:4px">Where they need the most help</div>${bar('help_needed',multi('help_needed'))}</div>
-      <div><div class="small muted" style="margin-bottom:4px">Fields of interest</div>${bar('fields',multi('fields'))}</div>
-      <div><div class="small muted" style="margin-bottom:4px">Current status</div>${bar('status',single('status'))}</div>
+  const rc=avg('resume_confidence'), ic=avg('interview_confidence');
+  const gauge=(val,label)=>`<div class="stat"><b data-count="${val.toFixed(1)}">0</b>${label}<div class="track" style="margin-top:9px"><i data-w="${Math.round(val/5*100)}%" style="width:0;background:linear-gradient(90deg,var(--navy),var(--gold))"></i></div></div>`;
+  return `<div class="card">
+    <div class="row" style="justify-content:space-between;align-items:baseline"><p class="sechead" style="margin:0">Student questionnaire</p><span class="small muted">${n} of ${tot} completed</span></div>
+    <div class="grid two" style="margin-top:14px;gap:24px">
+      <div><div class="small muted" style="margin-bottom:6px">What they're looking for</div>${barList(multi('seeking'))}</div>
+      <div><div class="small muted" style="margin-bottom:6px">Where they need the most help</div>${barList(multi('help_needed'),()=>'linear-gradient(90deg,var(--bronze),var(--gold))')}</div>
+      <div><div class="small muted" style="margin-bottom:6px">Fields of interest</div>${barList(multi('fields'),()=>'linear-gradient(90deg,var(--royal),var(--gold))')}</div>
+      <div><div class="small muted" style="margin-bottom:6px">Current status</div>${barList(single('status'))}</div>
     </div>
-    <div class="grid three" style="margin-top:16px">
-      <div class="stat"><b>${avg('resume_confidence')}</b>Avg resume confidence (1–5)</div>
-      <div class="stat"><b>${avg('interview_confidence')}</b>Avg interview confidence (1–5)</div>
-      <div class="stat"><b>${needRemote}</b>Need remote / very close work</div>
+    <div class="grid three" style="margin-top:18px">
+      ${gauge(rc,'Avg resume confidence (1–5)')}
+      ${gauge(ic,'Avg interview confidence (1–5)')}
+      <div class="stat"><b data-count="${needRemote}">0</b>Need remote / very close work</div>
     </div>
-    ${needPaper?`<p class="small" style="margin-top:12px;color:var(--navy)">⚠️ <b>${needPaper}</b> student${needPaper>1?'s':''} asked for help with work paperwork.</p>`:''}
-    <div class="row" style="margin-top:12px"><button class="btn ghost sm" data-act="export" data-k="intake">Export questionnaire CSV</button></div>
+    ${needPaper?`<p class="small" style="margin-top:14px;color:var(--navy)">⚠️ <b>${needPaper}</b> student${needPaper>1?'s':''} asked for help with work paperwork.</p>`:''}
+    <div class="row" style="margin-top:14px"><button class="btn ghost sm" data-act="export" data-k="intake">Export questionnaire CSV</button></div>
   </div>`;
 }
 function councilEmployers(){
