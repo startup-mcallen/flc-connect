@@ -1332,12 +1332,18 @@ async function togglePublish(){
 }
 async function uploadResume(file){
   if(!file) return;
-  if(file.type!=='application/pdf'){ setFlash('err','Please upload a PDF.'); return render(); }
+  if(file.type!=='application/pdf'){ toast('err','Please upload a PDF.'); return; }
   const uid=STATE.session.user.id; const path=`${uid}/resume.pdf`;
+  const box=document.getElementById('resumebox');
+  if(box) box.innerHTML='<p class="small muted">Uploading…</p>';
   const { error } = await sb.storage.from('resumes').upload(path, file, {upsert:true, contentType:'application/pdf'});
-  if(error){ setFlash('err',error.message); return render(); }
+  if(error){ toast('err',error.message); if(box&&STU.data) box.innerHTML=resumeBox(STU.data); return; }
   await sb.from('students').update({resume_path:path}).eq('id',uid);
-  setFlash('ok','Resume uploaded.'); STU.loaded=false; await renderStudent();
+  if(STU.data) STU.data.resume_path=path;
+  // Only refresh the resume area — never re-render the whole form, so anything the
+  // student typed but hasn't saved yet (and their saved info) stays exactly as it is.
+  if(box) box.innerHTML=resumeBox(STU.data||{resume_path:path});
+  toast('ok','Resume uploaded — the rest of your profile is untouched.');
 }
 async function viewOwnResume(){
   const { data, error } = await sb.storage.from('resumes').createSignedUrl(`${STATE.session.user.id}/resume.pdf`, 120);
