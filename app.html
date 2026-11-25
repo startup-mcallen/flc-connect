@@ -392,6 +392,7 @@ function shell(inner, opts={}){
   <header class="top"><div class="wrap topin">
     <a class="brand" href="index.html"><img src="${SEAL}" alt=""> FLC Connect</a>
     <div class="navsp"></div>
+    <button id="langtoggle" class="btn ghost sm" type="button" aria-label="Switch language" style="margin-right:10px">Español</button>
     <div class="navlinks">${nav}</div>
   </div></header>
   <main class="wrap view-in" style="padding:22px 20px 40px">${inner}</main>
@@ -1650,6 +1651,90 @@ window.addEventListener('hashchange',()=>{ if(!STATE.session) render(); });
 window.addEventListener('unhandledrejection', e=>{ showFatal(e.reason||'Unexpected error'); });
 window.addEventListener('error', e=>{ if(e.target && e.target!==window) return; showFatal(e.error||e.message||'Unexpected error'); });
 boot();
+</script>
+<script>
+/* App-wide EN/ES — shares the landing's choice via localStorage; re-applies after every render */
+(function(){
+  var ES = {
+    "Sign in":"Iniciar sesión","Create account":"Crear cuenta","Log in":"Iniciar sesión","Sign up":"Crear cuenta",
+    "Email":"Correo","Password":"Contraseña","Sign out":"Cerrar sesión","Full name":"Nombre completo",
+    "Dashboard":"Panel","My profile":"Mi perfil","Welcome back 👋":"Bienvenido de nuevo 👋",
+    "Save profile":"Guardar perfil","Build your profile":"Crea tu perfil","Edit your profile":"Edita tu perfil",
+    "Edit profile →":"Editar perfil →","Edit profile":"Editar perfil","Cancel":"Cancelar",
+    "Profile photo":"Foto de perfil","Tap the camera to add a photo. Optional.":"Toca la cámara para agregar una foto. Opcional.",
+    "School / University":"Escuela / Universidad","Expected graduation year":"Año de graduación esperado",
+    "Headline (what you want to do)":"Titular (lo que quieres hacer)","City":"Ciudad","About you":"Sobre ti",
+    "Skills":"Habilidades","Interests (comma separated)":"Intereses (separados por comas)","Job types you want":"Tipos de trabajo que buscas",
+    "Under 18?":"¿Menor de 18?","I am under 18":"Soy menor de 18","Guardian name":"Nombre del tutor","Guardian email":"Correo del tutor",
+    "A guardian must approve before your profile becomes visible. We'll email them for consent.":"Un tutor debe aprobar antes de que tu perfil sea visible. Le enviaremos un correo para pedir su consentimiento.",
+    "Your contact info (private)":"Tu información de contacto (privada)","Email employers can reach you at":"Correo donde los empleadores pueden contactarte","Phone (optional)":"Teléfono (opcional)",
+    "Resume (PDF)":"Currículum (PDF)","Upload PDF":"Subir PDF","Replace":"Reemplazar","View":"Ver","Check my resume":"Revisar mi currículum",
+    "Private — only the council and employers you accept can open it. After uploading, you can run a free resume check.":"Privado — solo el council y los empleadores que aceptes pueden abrirlo. Después de subirlo, puedes hacer una revisión gratis de tu currículum.",
+    "Resume uploaded":"Currículum subido","✔ Resume uploaded":"✔ Currículum subido",
+    "Your profile and resume stay private. The council reviews it, and we use it to match you with real local jobs. The more complete it is, the better your matches.":"Tu perfil y tu currículum son privados. El council los revisa y los usamos para conectarte con trabajos locales reales. Entre más completo, mejores tus matches.",
+    "Profile complete":"Perfil completo","Resume keywords":"Palabras clave del currículum","Jobs to explore":"Trabajos por explorar",
+    "Your best match":"Tu mejor match","See matches →":"Ver matches →","Pause my profile":"Pausar mi perfil","Activate my profile":"Activar mi perfil",
+    "Add your skills and upload your resume to unlock better job matches.":"Agrega tus habilidades y sube tu currículum para desbloquear mejores matches.",
+    "Real openings in the Rio Grande Valley, ranked by how well they fit you.":"Vacantes reales en el Valle del Río Grande, ordenadas según qué tan bien van contigo.",
+    "Add your skills and run a resume check":"Agrega tus habilidades y haz una revisión de tu currículum","for much better matches.":"para matches mucho mejores.",
+    "Apply →":"Aplicar →","▸ See why":"▸ Ver por qué","Match strength":"Fuerza del match","Skills you have for this":"Habilidades que tienes para esto",
+    "Add these to match more":"Agrega estas para subir el match","Add skills to your profile to see matches here.":"Agrega habilidades a tu perfil para ver matches aquí.",
+    "A local opportunity — add skills that fit to rank it higher.":"Una oportunidad local — agrega habilidades que encajen para subirla.",
+    "Open job →":"Abrir vacante →","View all →":"Ver todas →","Add your resume & boost it":"Agrega tu currículum y potencialo",
+    "A few quick questions 📝":"Unas preguntas rápidas 📝",
+    "About 2 minutes. Your answers help the Future Leaders Council support you — and sharpen your job matches. Only the council can see these.":"Unos 2 minutos. Tus respuestas ayudan al Future Leaders Council a apoyarte — y mejoran tus matches. Solo el council puede verlas.",
+    "(pick any)":"(elige las que quieras)","What are you looking for?":"¿Qué estás buscando?","Fields you're interested in":"Áreas que te interesan",
+    "Where are you right now?":"¿Dónde estás ahora?","When do you want to start?":"¿Cuándo quieres empezar?","How would you get to work?":"¿Cómo llegarías al trabajo?",
+    "Can you legally work in the U.S.?":"¿Puedes trabajar legalmente en EE.UU.?","How confident is your resume?":"¿Qué tan seguro te sientes de tu currículum?",
+    "(1 low – 5 high)":"(1 bajo – 5 alto)","How confident about interviews?":"¿Qué tan seguro te sientes en entrevistas?","What would help you most?":"¿Qué te ayudaría más?",
+    "Submit":"Enviar","Save answers":"Guardar respuestas","Choose…":"Elige…","Update answers":"Actualizar respuestas","✔ Questionnaire complete":"✔ Cuestionario completo",
+    "Thanks! This helps the Future Leaders Council support you. You can update your answers anytime.":"¡Gracias! Esto ayuda al Future Leaders Council a apoyarte. Puedes actualizar tus respuestas cuando quieras.",
+    "Internship":"Prácticas","Part-time":"Medio tiempo","Full-time":"Tiempo completo","Summer job":"Trabajo de verano",
+    "Part-time job":"Trabajo de medio tiempo","Full-time job":"Trabajo de tiempo completo","My first job ever":"Mi primer trabajo","Just exploring":"Solo explorando",
+    "Healthcare":"Salud","Business / office":"Negocios / oficina","Education":"Educación","Skilled trades":"Oficios técnicos","Tech / IT":"Tecnología / IT",
+    "Hospitality / food":"Hospitalidad / comida","Government":"Gobierno","Retail / sales":"Ventas / tienda","Logistics / warehouse":"Logística / almacén","Creative / media":"Creativo / medios",
+    "In high school":"En preparatoria","In college":"En la universidad","Recently graduated":"Recién graduado","Out of school right now":"Fuera de la escuela ahora",
+    "Right now":"Ahora mismo","In the next few months":"En los próximos meses","This summer":"Este verano","After I graduate":"Después de graduarme","Not sure yet":"Aún no sé",
+    "I have my own car":"Tengo mi propio carro","Family can drive me":"Mi familia puede llevarme","Public transit / rideshare":"Transporte público / rideshare","Walk or bike":"Caminando o en bici","I need remote or very close":"Necesito remoto o muy cerca",
+    "Yes":"Sí","I need help with paperwork":"Necesito ayuda con papeleo","Not sure":"No estoy seguro",
+    "Resume help":"Ayuda con el currículum","Interview practice":"Práctica de entrevistas","Finding jobs":"Encontrar trabajos","Help applying":"Ayuda para aplicar",
+    "Transportation":"Transporte","Learning new skills":"Aprender nuevas habilidades","A mentor":"Un mentor","College / scholarship info":"Info de universidad / becas",
+    "Command center":"Centro de comando","Students":"Estudiantes","Awaiting review":"Por revisar","Visible now":"Visibles ahora","Questionnaires":"Cuestionarios","Under 18":"Menores de 18",
+    "Jobs in the feed":"Trabajos en el feed","live openings across the Rio Grande Valley":"vacantes activas en todo el Valle del Río Grande","↻ Refresh":"↻ Actualizar","↻ Refresh jobs":"↻ Actualizar trabajos","Refresh":"Actualizar",
+    "Students by status":"Estudiantes por estatus","Jobs by source":"Trabajos por fuente","Where the jobs are":"Dónde están los trabajos","What students are looking for":"Qué buscan los estudiantes",
+    "Student questionnaire":"Cuestionario de estudiantes","No responses yet. Students see a short questionnaire on their dashboard — answers show up here as live insights.":"Aún no hay respuestas. Los estudiantes ven un cuestionario corto en su panel — las respuestas aparecen aquí como datos en vivo.",
+    "Export students CSV":"Exportar estudiantes CSV","Export questionnaire CSV":"Exportar cuestionario CSV","Avg resume confidence (1–5)":"Confianza prom. en currículum (1–5)","Avg interview confidence (1–5)":"Confianza prom. en entrevistas (1–5)","Need remote / very close work":"Necesitan trabajo remoto / muy cerca",
+    "Jobs":"Trabajos","Job feed":"Feed de trabajos","+ Add manually":"+ Agregar manual","Approve":"Aprobar","Reject":"Rechazar",
+    "Approved":"Aprobado","Rejected":"Rechazado","Pending":"Pendiente","Example":"Ejemplo","Live":"En vivo","Federal":"Federal","Added":"Agregado",
+    "Questionnaire":"Cuestionario","Looking for":"Busca","Fields":"Áreas","Status":"Estatus","Timeline":"Cuándo","Can work in U.S.":"Puede trabajar en EE.UU.","Resume confidence":"Confianza en currículum","Interview confidence":"Confianza en entrevistas","Wants help with":"Quiere ayuda con",
+    "School":"Escuela","Graduation":"Graduación","Job types":"Tipos de trabajo","Interests":"Intereses","About":"Sobre","Guardian":"Tutor","Phone":"Teléfono","Active":"Activo","Paused":"Pausado","Open resume (PDF)":"Abrir currículum (PDF)","No resume uploaded":"Sin currículum",
+    "Profile saved.":"Perfil guardado.","Photo saved.":"Foto guardada.","Thanks! Your answers are saved.":"¡Gracias! Tus respuestas se guardaron.","Loading…":"Cargando…","Signed in":"Sesión iniciada",
+    "No jobs in the feed yet. Once jobs are loaded, your best matches show up here, ranked by how well they fit you.":"Aún no hay trabajos en el feed. Cuando se carguen, tus mejores matches aparecerán aquí, ordenados según qué tan bien van contigo."
+  };
+  var EN={}; for(var k in ES){ if(ES.hasOwnProperty(k)) EN[ES[k]]=k; }
+  function tx(map){
+    var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+    while(n=w.nextNode()){
+      var p=n.parentNode; if(p && p.closest && p.closest('script,style,textarea')) continue;
+      var raw=n.nodeValue, t=raw.trim(); if(!t) continue;
+      if(map[t]) n.nodeValue = raw.replace(t, map[t]);
+    }
+  }
+  function setBtn(){ var b=document.getElementById('langtoggle'); if(!b) return; var want=(document.documentElement.lang==='es')?'English':'Español'; if(b.textContent!==want) b.textContent=want; }
+  var observing=false, pending=false;
+  var obs=new MutationObserver(function(){ if(document.documentElement.lang!=='es'||pending) return; pending=true; requestAnimationFrame(function(){ pending=false; obs.disconnect(); tx(ES); setBtn(); obs.observe(document.body,{childList:true,subtree:true,characterData:true}); }); });
+  function startObs(){ if(observing)return; observing=true; obs.observe(document.body,{childList:true,subtree:true,characterData:true}); }
+  function stopObs(){ observing=false; try{obs.disconnect();}catch(e){} }
+  function setLang(lang){
+    if(lang==='es'){ document.documentElement.lang='es'; tx(ES); startObs(); }
+    else { stopObs(); document.documentElement.lang='en'; tx(EN); }
+    setBtn(); try{ localStorage.setItem('flc_lang',lang); }catch(e){}
+  }
+  document.addEventListener('click', function(e){ var b=e.target.closest&&e.target.closest('#langtoggle'); if(b){ e.preventDefault(); setLang(document.documentElement.lang==='es'?'en':'es'); } });
+  var saved='en'; try{ saved=localStorage.getItem('flc_lang')||'en'; }catch(e){}
+  if(saved==='es'){ document.documentElement.lang='es'; tx(ES); startObs(); }
+  setBtn();
+})();
 </script>
 </body>
 </html>
