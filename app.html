@@ -141,6 +141,26 @@ textarea{min-height:90px;resize:vertical}
 .pc-skills{display:flex;flex-wrap:wrap;gap:9px}
 .pc-skill{display:inline-flex;align-items:center;gap:7px;background:var(--cream);border:1px solid var(--line);color:var(--navy);font-weight:600;font-size:13px;padding:8px 14px;border-radius:999px}
 .pc-skill .d{width:8px;height:8px;border-radius:50%;background:linear-gradient(150deg,#E7C988,var(--gold))}
+/* ---- Matches: fit cards ---- */
+.fitb{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;white-space:nowrap}
+.fitb.strong{background:#dcf0e4;color:#2f9e67}
+.fitb.good{background:#e9edf6;color:var(--royal)}
+.fitb.fair{background:#f4ecd8;color:#9a7b3c}
+.fitb.top{background:linear-gradient(150deg,#E7C988,var(--gold));color:#241a09;box-shadow:0 2px 10px rgba(198,158,85,.45)}
+.jcardm{border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;background:#fff;transition:box-shadow .16s,transform .16s}
+.jcardm:hover{box-shadow:0 12px 30px rgba(12,30,60,.1);transform:translateY(-2px)}
+.jcardm.topmatch{border:2px solid var(--gold)}
+.jreason{font-size:13px;background:var(--cream);border-radius:9px;padding:9px 11px;margin:10px 0 0}
+.seewhy{background:none;border:0;color:var(--royal);font-weight:700;font-size:13px;cursor:pointer;padding:0}
+.whym{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.whym.open{max-height:420px}
+.whymin{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.chkm{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0}
+.chkm .k{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px}
+.chkm .k.have{background:#dcf0e4;color:#2f9e67}
+.chkm .k.gap{background:#f4ecd8;color:#9a7b3c}
+.wlblm{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 2px}
+.intpillm{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#241a09;background:#f4ecd8;padding:5px 11px;border-radius:999px;margin-bottom:10px}
 .mbar i{display:block;height:100%;background:linear-gradient(90deg,var(--royal),var(--gold))}
 .ringnum{font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;font-size:18px}
 /* ---- Polish & motion ---- */
@@ -1111,23 +1131,63 @@ function intakeForm(){
   </div>`;
 }
 
+function capWords(s){ return (''+s).replace(/\b\w/g,function(c){return c.toUpperCase();}); }
+function studentInterests(s){
+  return [...new Set([
+    ...((s.interests)||[]),
+    ...(((STU.intake&&STU.intake.fields)||[]).map(f=>intakeLabel('fields',f)))
+  ].map(x=>(''+x).toLowerCase().trim()).filter(x=>x.length>2))];
+}
+function jobFit(student, job){
+  const skillTerms=[...new Set([...(student.skills||[]),...(student.resume_keywords||[])].map(x=>(''+x).toLowerCase().trim()).filter(x=>x.length>2))];
+  const hay=((job.title||'')+' '+(job.description||'')+' '+((job.skills||[]).join(' '))+' '+(job.category||'')).toLowerCase();
+  const have=[...new Set(skillTerms.filter(t=>hay.includes(t)))];
+  let pct = skillTerms.length? 65*Math.min(1, have.length/Math.min(6,Math.max(3,skillTerms.length))) : 0;
+  if(job.job_type && (student.job_types||[]).includes(job.job_type)) pct+=18;
+  const sc=(''+(student.city||'')).toLowerCase().trim(), jc=(''+(job.city||'')).toLowerCase().trim();
+  if(sc&&jc&&(jc.includes(sc)||sc.includes(jc))) pct+=17;
+  pct=Math.round(Math.min(100,pct));
+  const interests=studentInterests(student);
+  const hitInterest=interests.filter(it=> (''+(job.title||'')).toLowerCase().includes(it));
+  const gap=(job.skills||[]).map(x=>(''+x).trim()).filter(w=> skillTerms.indexOf(w.toLowerCase())<0).slice(0,6);
+  return { pct, score: pct + (hitInterest.length?1000:0), have:have.slice(0,6), gap, hitInterest };
+}
+function fitClassA(p){ return p>=60?'strong':p>=35?'good':'fair'; }
+function fitLabelA(p){ return p>=60?'Strong fit':p>=35?'Good fit':'Fair fit'; }
+function fitReason(a){
+  if(a.hitInterest.length) return 'This is a '+capWords(a.hitInterest[0])+' role — exactly the field you told us you want.'+(a.have.length?' You already have '+a.have.slice(0,2).join(' and ')+'.':'');
+  if(a.have.length>=2) return 'Matches your '+a.have.slice(0,2).join(' and ')+(a.have.length>2?' (+'+(a.have.length-2)+' more)':'')+'.';
+  if(a.have.length===1) return 'Matches your '+a.have[0]+' — add a couple more skills to climb higher.';
+  return 'A local opportunity — add skills that fit to rank it higher.';
+}
 function studentMatches(){
   const s=STU.data||{};
   if(!STU.jobs||!STU.jobs.length) return `<div class="card center"><p class="muted">No jobs in the feed yet. Once jobs are loaded, your best matches show up here, ranked by how well they fit you.</p></div>`;
-  const ranked=STU.jobs.map(j=>({j, m:matchJob(s,j)})).sort((a,b)=>b.m.score-a.m.score);
+  const ranked=STU.jobs.map(j=>({j, a:jobFit(s,j)})).sort((x,y)=>y.a.score-x.a.score);
   const weak=!((s.skills||[]).length) && !((s.resume_keywords||[]).length);
-  return `<p class="small muted">Real openings in the Rio Grande Valley, ranked by how well they fit you. ${weak?'<strong>Add your skills and run a resume check</strong> to get much better matches.':'Keep your skills updated and run a resume check for sharper matches.'}</p>
-  <div class="grid two">${ranked.map(({j,m})=>`<div class="card" style="margin:0">
-    <div class="row" style="justify-content:space-between;align-items:flex-start">
-      <div><strong>${esc(j.title)}</strong><div class="small muted">${esc(j.company||'')}${(j.city||j.location)?' · '+esc(j.city||j.location):''}</div></div>
-      <div class="ringnum">${m.score}%</div>
-    </div>
-    <div class="mbar" style="margin:8px 0"><i style="width:${m.score}%"></i></div>
-    ${j.job_type?`<span class="pill role">${jobLabel(j.job_type)}</span> `:''}${j.category?`<span class="pill role">${esc(j.category)}</span>`:''}
-    ${j.description?`<p class="small" style="margin:8px 0">${esc((''+j.description).slice(0,220))}${(''+j.description).length>220?'…':''}</p>`:''}
-    <div class="small muted">${m.reasons.length?('Why it fits: '+m.reasons.map(esc).join(', ')):'A local opportunity to consider.'}</div>
-    <div style="margin-top:10px"><a class="btn gold sm" href="${esc(jobApplyUrl(j))}" target="_blank" rel="noopener">View &amp; apply →</a></div>
-  </div>`).join('')}</div>`;
+  const ints=studentInterests(s);
+  return `<p class="small muted">Real openings in the Rio Grande Valley, ranked by how well they fit you${ints.length?' — your interest in <strong>'+esc(capWords(ints[0]))+'</strong> comes first':''}. ${weak?'<strong>Add your skills and run a resume check</strong> for much better matches.':''}</p>
+  ${ranked.map(({j,a},idx)=>{
+    const isTop=a.hitInterest.length>0, fc=fitClassA(a.pct);
+    const badge=isTop?`<span class="fitb top">★ Top match · ${esc(capWords(a.hitInterest[0]))}</span>`:`<span class="fitb ${fc}">${fitLabelA(a.pct)} · ${a.pct}%</span>`;
+    return `<div class="jcardm${isTop?' topmatch':''}">
+      <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="min-width:0"><strong>${esc(j.title)}</strong><div class="small muted">${esc(j.company||'')}${(j.city||j.location)?' · '+esc(j.city||j.location):''}${j.job_type?' · '+esc(jobLabel(j.job_type)):''}</div></div>
+        ${badge}
+      </div>
+      <p class="jreason">${esc(fitReason(a))}</p>
+      <div class="row" style="justify-content:space-between;align-items:center;margin-top:11px;gap:10px">
+        <button class="seewhy" data-act="seewhy" data-i="${idx}">▸ See why</button>
+        <a class="btn gold sm" href="${esc(jobApplyUrl(j))}" target="_blank" rel="noopener">Apply →</a>
+      </div>
+      <div class="whym" id="whym-${idx}"><div class="whymin">
+        ${isTop?`<div class="intpillm">★ Your interest “${esc(capWords(a.hitInterest[0]))}” is right in this job title</div>`:''}
+        <div class="wlblm">Match strength</div><div class="mbar"><i style="width:${a.pct}%"></i></div>
+        <div class="wlblm">Skills you have for this</div><div class="chkm">${a.have.length?a.have.map(k=>`<span class="k have">✓ ${esc(k)}</span>`).join(''):'<span class="small muted">Add skills to your profile to see matches here.</span>'}</div>
+        ${a.gap.length?`<div class="wlblm">Add these to match more</div><div class="chkm">${a.gap.map(k=>`<span class="k gap">+ ${esc(k)}</span>`).join('')}</div>`:''}
+      </div></div>
+    </div>`;
+  }).join('')}`;
 }
 function matchJob(student, job){
   const terms=[...new Set([...(student.skills||[]),...(student.resume_keywords||[]),...(student.interests||[])].map(x=>(''+x).toLowerCase().trim()).filter(x=>x.length>2))];
@@ -1342,6 +1402,7 @@ document.addEventListener('click', async (ev)=>{
   const act = t.getAttribute('data-act');
   try{
     if(act==='reload') return location.reload();
+    if(act==='seewhy'){ var w=document.getElementById('whym-'+t.getAttribute('data-i')); if(w){ w.classList.toggle('open'); t.innerHTML=(w.classList.contains('open')?'▾ Hide':'▸ See why'); } return; }
     if(act==='editprofile'){ STU.editing=true; STU.skillsDraft=((STU.data&&STU.data.skills)||[]).slice(); return renderStudent(); }
     if(act==='canceledit'){ STU.editing=false; STU.skillsDraft=null; return renderStudent(); }
     if(act==='usermenu'){ const m=document.getElementById('usermenu-pop'); if(m) m.classList.toggle('hide'); return; }
