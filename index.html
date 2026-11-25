@@ -34,6 +34,12 @@ body{
 .lk{color:var(--cream);text-decoration:none;font-weight:600;font-size:14px;padding:9px 14px;border-radius:10px}
 .lk.ghost{border:1.5px solid rgba(246,243,236,.3)}
 .lk.gold{background:var(--gold);color:#241a09}
+.samp{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7E602A;background:#f4ecd8;padding:2px 7px;border-radius:999px;vertical-align:middle;margin-left:6px}
+@media(max-width:560px){
+  .barin{height:auto;min-height:58px;gap:8px;padding:9px 0;flex-wrap:wrap}
+  .brand{font-size:15px}.brand img{width:28px;height:28px}
+  .lk,#langtoggle{padding:7px 10px;font-size:12.5px}
+}
 
 /* hero */
 .hero{position:relative;min-height:100svh;display:flex;align-items:center;padding:96px 0 60px}
@@ -145,6 +151,13 @@ h1 .ln>span{display:block}
 .ctaband h2{font-size:clamp(26px,4vw,40px);margin:0 0 10px;color:var(--cream)}
 .ctaband p{color:var(--mist);margin:0 0 24px}
 footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42px;font-size:13px}
+.ctafine{color:var(--mist);font-size:12.5px;margin:16px auto 0;max-width:52ch;opacity:.85}
+.fmeta{margin-top:7px;font-size:12.5px}
+.fmeta a{color:var(--royal);text-decoration:none}
+.privacy{display:inline-block;text-align:left}
+.privacy summary{display:inline;cursor:pointer;color:var(--royal);font-weight:600;list-style:none}
+.privacy summary::-webkit-details-marker{display:none}
+.privbody{max-width:60ch;margin:10px auto 0;color:#5b6676;font-size:12.5px;line-height:1.6;text-align:left}
 /* council mission / vision band */
 .council{display:flex;gap:26px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px;margin-bottom:56px;box-shadow:0 14px 40px rgba(19,32,58,.07)}
 .council .seal{flex:0 0 auto;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
@@ -164,8 +177,8 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
   <span class="sp"></span>
   <button id="langtoggle" class="lk ghost" type="button" aria-label="Switch language" style="cursor:pointer;font:inherit">Español</button>
   <span id="roleBar" style="display:flex;gap:8px;align-items:center">
-    <a class="lk ghost" href="app.html">Log in</a>
-    <a class="lk gold" href="app.html">Sign up</a>
+    <a class="lk ghost" href="app.html#/login">Log in</a>
+    <a class="lk gold" href="app.html#/signup">Sign up</a>
   </span>
 </div></div>
 
@@ -184,7 +197,7 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
         <div class="rise">
           <p class="lead d3">Build one profile, add your resume, and get matched to real jobs across the Rio Grande Valley — ranked by how well they fit you. Free for every RGV student.</p>
           <div class="cta d4">
-            <a class="btn gold" href="app.html">Get started &rarr;</a>
+            <a class="btn gold" href="app.html#/signup">Get started &rarr;</a>
             <a class="btn ghost" href="mailto:flc@co.hidalgo.tx.us?subject=FLC%20Connect%20%E2%80%94%20Employer%20inquiry">For employers</a>
           </div>
           <div class="badges d5">
@@ -199,10 +212,10 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
         <div class="float f-top card floater stagecard sc2">
           <div class="lab">Top match</div>
           <div class="big"><span id="pct">0</span>%</div>
-          <div style="font-size:12px;color:#5b6676">Community outreach assistant</div>
+          <div style="font-size:12px;color:#5b6676">Marketing &amp; social media intern</div>
         </div>
         <div class="phone card floater stagecard sc1">
-          <div class="hi">Hi, Daniela</div>
+          <div class="hi">Hi, Daniela <span class="samp">Sample</span></div>
           <div class="sub">PSJA Early College · Class of 2027</div>
           <div class="mrow">
             <div class="t"><span>Marketing &amp; social media intern</span><b style="color:#7E602A">100%</b></div>
@@ -230,7 +243,7 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
   <div class="wrap">
     <div class="eyebrow2">For students</div>
     <h2 class="sec-title slab">Everything you need to land that first job.</h2>
-    <p class="sec-sub">One profile, your resume, and real local openings — matched to you. Free, always.</p>
+    <p class="sec-sub">One profile, your resume, and real local openings — matched to you.</p>
 
     <div class="stats2 stats">
       <div class="stat2"><span class="n" id="st-students">0</span><span class="lbl">Student profiles</span></div>
@@ -257,7 +270,8 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
     <div class="ctaband">
       <h2 class="slab">Your first job starts here.</h2>
       <p>Free for every student in the Rio Grande Valley.</p>
-      <a class="btn gold" href="app.html">Create your free profile &rarr;</a>
+      <a class="btn gold" href="app.html#/signup">Create your free profile &rarr;</a>
+      <p class="ctafine">Your info stays private — only the council and employers you approve can see it. Under 18? A parent or guardian approves before your profile is ever visible.</p>
     </div>
 
     <div class="council">
@@ -275,7 +289,12 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
     </div>
     <script>(function(){try{var b=document.querySelector('.brand img');var s=document.getElementById('council-seal');if(b&&s)s.src=b.src;}catch(e){}})();</script>
   </div>
-  <footer>Hidalgo County Future Leaders Council · FLC Connect</footer>
+  <footer>
+    <div>Hidalgo County Future Leaders Council · FLC Connect</div>
+    <div class="fmeta">Questions? <a href="mailto:flc@co.hidalgo.tx.us">flc@co.hidalgo.tx.us</a>
+      · <details class="privacy"><summary>Privacy</summary><div class="privbody">FLC Connect is run by the Hidalgo County Future Leaders Council. Your profile, resume and contact info stay private — only the council and employers you approve can see them. Students under 18 need a parent or guardian's approval before a profile becomes visible. We never sell your information. To update or delete your data, email flc@co.hidalgo.tx.us.</div></details>
+    </div>
+  </footer>
 </div>
 
 <script>
@@ -285,9 +304,9 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
   requestAnimationFrame(function(){ setTimeout(function(){ document.body.classList.add('on'); animate(); }, 80); });
   // bars + count
   function animate(){
-    try{ if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches){ document.querySelectorAll('.mbar i').forEach(function(b){b.style.width=b.dataset.w+'%';}); document.getElementById('pct').textContent='75'; return; } }catch(e){}
+    try{ if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches){ document.querySelectorAll('.mbar i').forEach(function(b){b.style.width=b.dataset.w+'%';}); document.getElementById('pct').textContent='100'; return; } }catch(e){}
     setTimeout(function(){ document.querySelectorAll('.mbar i').forEach(function(b){ b.style.transition='width 1s cubic-bezier(.22,1,.36,1)'; b.style.width=b.dataset.w+'%'; }); }, 700);
-    var el=document.getElementById('pct'), target=75, t0=null;
+    var el=document.getElementById('pct'), target=100, t0=null;
     setTimeout(function(){ requestAnimationFrame(function tick(now){ if(!t0)t0=now; var p=Math.min(1,(now-t0)/1100); var e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e); if(p<1)requestAnimationFrame(tick); else el.textContent=target; }); }, 760);
   }
   // scrolled bar
@@ -349,7 +368,7 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
 (function(){
   try{
     var sb=supabase.createClient("https://aedbwkvhlbwmktqtiqca.supabase.co","sb_publishable_GKLTpxYjyma1vcB7QWk8lQ_xIr7jqz2");
-    function setN(id,v){ var el=document.getElementById(id); if(el&&v!=null) el.textContent=(''+v); }
+    function setN(id,v){ var el=document.getElementById(id); if(el) el.textContent=(''+(v==null||isNaN(+v)?0:+v)); }
     sb.rpc('public_stats').then(function(r){
       if(r&&r.data){ var d=r.data; setN('st-students',d.students); setN('st-jobs',d.jobs); setN('st-companies',d.companies); setN('st-cities',d.cities); setTimeout(animateCounters,90); }
     }).catch(function(){});
@@ -395,6 +414,7 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
     "Real local jobs":"Trabajos locales reales",
     "Free for students":"Gratis para estudiantes",
     "Top match":"Mejor match",
+    "Sample":"Ejemplo",
     "Community outreach assistant":"Asistente de alcance comunitario",
     "Hi, Daniela":"Hola, Daniela",
     "PSJA Early College · Class of 2027":"PSJA Early College · Generación 2027",
@@ -406,7 +426,7 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
     "Scroll":"Desliza",
     "For students":"Para estudiantes",
     "Everything you need to land that first job.":"Todo lo que necesitas para conseguir tu primer trabajo.",
-    "One profile, your resume, and real local openings — matched to you. Free, always.":"Un perfil, tu currículum y vacantes locales reales — hechas para ti. Gratis, siempre.",
+    "One profile, your resume, and real local openings — matched to you.":"Un perfil, tu currículum y vacantes locales reales — hechas para ti.",
     "Student profiles":"Perfiles de estudiantes",
     "Local job matches":"Vacantes locales",
     "Local employers":"Empleadores locales",
@@ -429,6 +449,9 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
     "Your first job starts here.":"Tu primer trabajo empieza aquí.",
     "Free for every student in the Rio Grande Valley.":"Gratis para cada estudiante del Valle del Río Grande.",
     "Create your free profile →":"Crea tu perfil gratis →",
+    "Your info stays private — only the council and employers you approve can see it. Under 18? A parent or guardian approves before your profile is ever visible.":"Tu información es privada — solo el council y los empleadores que apruebes pueden verla. ¿Menor de 18? Un padre o tutor aprueba antes de que tu perfil sea visible.",
+    "Questions?":"¿Preguntas?","Privacy":"Privacidad",
+    "FLC Connect is run by the Hidalgo County Future Leaders Council. Your profile, resume and contact info stay private — only the council and employers you approve can see them. Students under 18 need a parent or guardian's approval before a profile becomes visible. We never sell your information. To update or delete your data, email flc@co.hidalgo.tx.us.":"FLC Connect es dirigido por el Hidalgo County Future Leaders Council. Tu perfil, currículum e información de contacto son privados — solo el council y los empleadores que apruebes pueden verlos. Los estudiantes menores de 18 necesitan la aprobación de un padre o tutor antes de que su perfil sea visible. Nunca vendemos tu información. Para actualizar o borrar tus datos, escribe a flc@co.hidalgo.tx.us.",
     "Learn · Serve · Lead":"Aprende · Sirve · Lidera",
     "Our mission":"Nuestra misión",
     "A hybrid, county-led civic leadership initiative created to invest in the next generation of community leaders — connecting young adults to local government, civic engagement, and regional opportunity, and working to retain, attract, develop, and empower young talent across the Rio Grande Valley.":"Una iniciativa cívica de liderazgo dirigida por el condado, creada para invertir en la próxima generación de líderes comunitarios — conectando a jóvenes con el gobierno local, la participación cívica y las oportunidades de la región, y trabajando para retener, atraer, desarrollar y empoderar al talento joven en todo el Valle del Río Grande.",
