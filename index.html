@@ -158,6 +158,22 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
 .privacy summary{display:inline;cursor:pointer;color:var(--royal);font-weight:600;list-style:none}
 .privacy summary::-webkit-details-marker{display:none}
 .privbody{max-width:60ch;margin:10px auto 0;color:#5b6676;font-size:12.5px;line-height:1.6;text-align:left}
+/* try it live */
+.trylive{background:radial-gradient(130% 150% at 85% -10%, #1b3e74, var(--navy2) 60%, var(--navy));color:#fff;border-radius:22px;padding:28px;margin-bottom:56px;box-shadow:0 20px 50px rgba(12,30,60,.18)}
+.trylive h3{font-size:clamp(21px,4vw,29px);margin:12px 0 16px;color:#fff}
+.tl-tag{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#eaf0fb;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);padding:5px 12px;border-radius:999px}
+.tl-tag .dot{width:7px;height:7px;border-radius:50%;background:#53e0a0}
+.tl-fields{display:grid;gap:12px;margin-bottom:14px}
+@media(min-width:620px){.tl-fields{grid-template-columns:1fr 1fr}}
+.tl-f label{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#aebbd4;margin:0 2px 5px}
+.tl-f input{width:100%;padding:12px 13px;border:1.5px solid rgba(255,255,255,.18);border-radius:11px;font:inherit;background:rgba(255,255,255,.95);color:var(--ink)}
+.tl-f input:focus{outline:none;border-color:var(--gold)}
+.tl-count{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:16px;text-align:center;margin-bottom:14px}
+.tl-count b{font-family:'Alfa Slab One',serif;font-size:40px;color:var(--gold2);display:block;line-height:1}
+.tl-count span{font-size:13px;color:#c9d4ea}
+.tl-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.tl-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#eaf0fb;font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px;cursor:pointer}
+.tl-pill:hover{background:rgba(255,255,255,.2)}
 /* council mission / vision band */
 .council{display:flex;gap:26px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px;margin-bottom:56px;box-shadow:0 14px 40px rgba(19,32,58,.07)}
 .council .seal{flex:0 0 auto;width:118px;height:118px;display:flex;align-items:center;justify-content:center}
@@ -241,6 +257,22 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
 
 <div class="canvas">
   <div class="wrap">
+    <div class="trylive">
+      <div class="tl-tag"><span class="dot"></span> Live · try any role, no sign-up</div>
+      <h3 class="slab">See how many Valley jobs fit you</h3>
+      <div class="tl-fields">
+        <div class="tl-f"><label>What are you looking for?</label><input id="tl-role" autocomplete="off" placeholder="e.g. Medical assistant, retail, social media" value="Social media"></div>
+        <div class="tl-f"><label>Where?</label><input id="tl-loc" autocomplete="off" placeholder="City in the RGV" value="McAllen"></div>
+      </div>
+      <div class="tl-count"><b id="tl-n">—</b><span id="tl-lbl">local openings match right now</span></div>
+      <div class="tl-pills">
+        <span class="tl-pill" data-r="Medical assistant" data-l="Edinburg">Medical assistant · Edinburg</span>
+        <span class="tl-pill" data-r="Warehouse" data-l="Pharr">Warehouse · Pharr</span>
+        <span class="tl-pill" data-r="Retail" data-l="McAllen">Retail · McAllen</span>
+        <span class="tl-pill" data-r="Customer service" data-l="Harlingen">Customer service · Harlingen</span>
+      </div>
+      <a class="btn gold" href="app.html#/signup" style="margin-top:4px">Create a free profile to see them &rarr;</a>
+    </div>
     <div class="eyebrow2">For students</div>
     <h2 class="sec-title slab">Everything you need to land that first job.</h2>
     <p class="sec-sub">One profile, your resume, and real local openings — matched to you.</p>
@@ -395,6 +427,32 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
       else run();
     }
     setTimeout(function(){ if(!window.__counted) animateCounters(); },1600);
+
+    // ---- "Try it live" job counter (anon-safe RPC) ----
+    (function(){
+      var roleEl=document.getElementById('tl-role'), locEl=document.getElementById('tl-loc'),
+          nEl=document.getElementById('tl-n'), lblEl=document.getElementById('tl-lbl');
+      if(!roleEl||!nEl) return;
+      var t=null;
+      function animN(to){ var from=parseInt((nEl.textContent||'0').replace(/[^0-9]/g,''))||0; var t0=performance.now();
+        (function s(now){ var p=Math.min(1,(now-t0)/500); nEl.textContent=Math.round(from+(to-from)*(1-Math.pow(1-p,3))); if(p<1)requestAnimationFrame(s); })(performance.now()); }
+      function run(){
+        var q=(roleEl.value||'').trim(), loc=(locEl.value||'').trim();
+        var es=document.documentElement.lang==='es';
+        var fallback=es?'Crea un perfil gratis para explorar trabajos locales':'Create a free profile to explore local jobs';
+        sb.rpc('jobs_matching_count',{q:q, loc:loc}).then(function(r){
+          if(r && !r.error && r.data!=null){
+            var n=r.data|0; animN(n);
+            lblEl.textContent = es ? (n===1?'vacante local encaja ahora mismo':'vacantes locales encajan ahora mismo') : (n===1?'local opening matches right now':'local openings match right now');
+          } else { nEl.textContent='—'; lblEl.textContent=fallback; }
+        }).catch(function(){ nEl.textContent='—'; lblEl.textContent=fallback; });
+      }
+      function schedule(){ if(t) clearTimeout(t); t=setTimeout(run, 300); }
+      roleEl.addEventListener('input', schedule);
+      locEl.addEventListener('input', schedule);
+      document.querySelectorAll('.tl-pill').forEach(function(p){ p.addEventListener('click', function(){ roleEl.value=p.getAttribute('data-r'); locEl.value=p.getAttribute('data-l'); run(); }); });
+      run();
+    })();
   }catch(e){}
 })();
 </script>
@@ -415,6 +473,11 @@ footer{background:var(--cream);color:#8a94a6;text-align:center;padding:4px 0 42p
     "Free for students":"Gratis para estudiantes",
     "Top match":"Mejor match",
     "Sample":"Ejemplo",
+    "Live · try any role, no sign-up":"En vivo · prueba cualquier rol, sin cuenta",
+    "See how many Valley jobs fit you":"Mira cuántos trabajos del Valle van contigo",
+    "What are you looking for?":"¿Qué estás buscando?","Where?":"¿Dónde?",
+    "Create a free profile to see them →":"Crea un perfil gratis para verlas →",
+    "Medical assistant · Edinburg":"Asistente médico · Edinburg","Warehouse · Pharr":"Almacén · Pharr","Retail · McAllen":"Tienda · McAllen","Customer service · Harlingen":"Atención al cliente · Harlingen",
     "Community outreach assistant":"Asistente de alcance comunitario",
     "Hi, Daniela":"Hola, Daniela",
     "PSJA Early College · Class of 2027":"PSJA Early College · Generación 2027",
